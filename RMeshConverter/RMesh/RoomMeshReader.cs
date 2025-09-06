@@ -19,7 +19,7 @@ public class RoomMeshReader
     private bool _hasTriggers;
 
     private int _textureCount;
-    private int _indicesOffset = 0; 
+    private int _indicesOffset;
     public List<Vertex[]> TextureVertices { get; set; }
     public string[] TexturePaths { get; set; }
     public List<int[]> _vertexIndices;
@@ -100,10 +100,9 @@ public class RoomMeshReader
         var indices = new int[triangleCount * 3];
         for (int i = 0; i < triangleCount * 3; i++)
         {
-            indices[i] =  ReadInt32();
+            indices[i] =  _indicesOffset + ReadInt32();
         }
-
-        _indicesOffset += triangleCount * 3;
+        _indicesOffset += vertexCount;
         _vertexIndices.Add(indices);
     }
     public void ReadOpaque()
@@ -147,7 +146,7 @@ public class RoomMeshReader
     {
         if (flag < 1 || flag > 3)
         {
-            throw new RoomMeshException("invalid texture flag");
+            throw new RoomMeshException($"invalid texture flag '{flag}'");
         }
         return (TextureType)flag;
     }
@@ -179,13 +178,22 @@ public class RoomMeshReader
         _logger.LogInformation("Trigger boxes: {}", count);
         for (int i = 0; i < count; i++)
         {
+            var surfaceAmount = ReadInt32();
             var vertexCount = ReadInt32();
             for (int j = 0; j < vertexCount; j++)
             {
                 var vert = new InvisibleCollisionVertex(ReadVector3());
             }
+           
 
-            var triangleCount = ReadInt32();
+            var triangleCount = ReadInt32(); 
+            for (int j = 0; j < triangleCount * 3; j++)
+            {
+                // _logger.LogInformation("Index: {}, Written: {}, Offset: {}", i, _ind, _indicesOffset);
+                // indices[i] =  _indicesOffset + ReadInt32();
+                ReadInt32();
+                // _ind++;
+            }
             var triggerBoxName = ReadB3DString();
         }
     }
@@ -277,7 +285,7 @@ public class RoomMeshReader
         {
             case "RoomMesh":
                 break;
-            case "RoomMesh.HasTriggerGox":
+            case "RoomMesh.HasTriggerBox":
                 _hasTriggers = true;
                 break;
             default:

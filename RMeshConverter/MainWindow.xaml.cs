@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using RMeshConverter.Exporter;
 using RMeshConverter.Exporter.Obj;
@@ -21,9 +22,14 @@ namespace RMeshConverter;
 /// </summary>
 public partial class MainWindow : Window
 {
+    private ILogger _logger;
+    
     public MainWindow()
     {
         InitializeComponent();
+        
+        using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
+        _logger = factory.CreateLogger<MainWindow>();
     }
 
     
@@ -77,11 +83,21 @@ public partial class MainWindow : Window
 
     public void Convert(object sender, RoutedEventArgs routedEventArgs)
     {
-        var file = Config._files[0];
-        var name = file.Split("\\").Last().Replace(".rmesh", ".obj");
-        var reader = new RoomMeshReader(Config._files[0]);
-        reader.Read();
-        var writer = new RoomMeshToObjWriter($"{Config.OutputFolder}/{name}", reader);
-        writer.Convert();
+        Parallel.ForEach(Config._files, file =>
+        {
+            try
+            {
+                var name = file.Split("\\").Last().Replace(".rmesh", ".obj");
+                var reader = new RoomMeshReader(file);
+                reader.Read();
+                var writer = new RoomMeshToObjWriter($"{Config.OutputFolder}/{name}", reader);
+                writer.Convert();
+            }
+            catch (Exception e)
+            {
+
+            }
+        });
+        _logger.LogInformation("Finished Converting.");
     }
 }

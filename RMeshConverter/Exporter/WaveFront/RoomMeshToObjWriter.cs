@@ -55,21 +55,25 @@ public class RoomMeshToObjWriter
 
     private void WriteIndex(int[] face)
     {
-        var str = Encoding.UTF8.GetBytes($"f {face[2]}// {face[1]}// {face[0]}//\n");
+        var str = Encoding.UTF8.GetBytes($"f {face[0]}// {face[1]}// {face[2]}//\n");
         _fileStream.Write(str);
     }
     
     private int WriteVertexIndices()
     {
         int i = 0;
+        var l = 0;
         var list = _reader._vertexIndices;
         foreach (var texture in list)
         {
+            var str = Encoding.UTF8.GetBytes($"g {l}\n");
+            _fileStream.Write(str);
             for (int j = 0; j < texture.Length; j += 3)
             {
                WriteIndex(texture[new Range(j,j + 3)]);
                i += 3;
             }
+            l++;
         }
         return i;
     }
