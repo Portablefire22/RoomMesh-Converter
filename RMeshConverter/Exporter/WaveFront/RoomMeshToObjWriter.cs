@@ -45,7 +45,7 @@ public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
 
     private void WriteVertexUv(Vector2 pos)
     {
-        var str = Encoding.UTF8.GetBytes($"vt {pos.X} {pos.Y}\n");
+        var str = Encoding.UTF8.GetBytes($"vt {-pos.X} {-pos.Y}\n");
         _fileStream.Write(str);
     }
     
@@ -74,7 +74,7 @@ public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
 
     private void WriteIndex(int[] face)
     {
-        var str = Encoding.UTF8.GetBytes($"f {face[0]}// {face[1]}// {face[2]}//\n");
+        var str = Encoding.UTF8.GetBytes($"f {face[0]}/{face[0]} {face[1]}/{face[1]} {face[2]}/{face[2]}\n");
         _fileStream.Write(str);
     }
     
@@ -104,7 +104,9 @@ public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
     
     public void Convert()
     {
-        var str = Encoding.UTF8.GetBytes($"mtllib {_name}.mtl\n");
+        var str = Encoding.UTF8.GetBytes($"# Lilith's RoomMesh Converter\n" +
+                                         $"# https://github.com/Portablefire22/RoomMesh-Converter\n" +
+                                         $"mtllib {_name}.mtl\n");
         _fileStream.Write(str);
         // OBJ indices start at 1 :)
         foreach (var indices in _reader._vertexIndices)

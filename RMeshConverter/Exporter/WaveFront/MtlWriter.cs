@@ -26,10 +26,13 @@ public class MtlWriter
     }
     public void Convert()
     {
+        var str = Encoding.UTF8.GetBytes($"# Lilith's RoomMesh Converter\n" +
+                                         $"# https://github.com/Portablefire22/RoomMesh-Converter\n");
+        _fileStream.Write(str);
         foreach (var path in _textureLocations)
         {
             CopyTexture(path);
-            var str = Encoding.UTF8.GetBytes($"newmtl {path}\n");
+            str = Encoding.UTF8.GetBytes($"newmtl {path}\n");
             _fileStream.Write(str);
             str = Encoding.UTF8.GetBytes($"map_Ka {path}\n");
             _fileStream.Write(str);
