@@ -11,7 +11,7 @@ namespace RMeshConverter.RMesh;
  *  At https://github.com/Koanyaku/godot_rmesh_import/blob/main/docs/rmesh_format_scp-cb.md
  */
 
-public class CbConverter
+public class RoomMeshReader
 {
     private FileStream _fileStream;
     private ILogger _logger;
@@ -19,20 +19,21 @@ public class CbConverter
     private bool _hasTriggers;
 
     private int _textureCount;
-
-    private Dictionary<string, Vertex[]> _textureVertex;
-    private Dictionary<string, int> _vertexIndices;
+    private int _indicesOffset = 0; 
+    public List<Vertex[]> TextureVertices { get; set; }
+    public string[] TexturePaths { get; set; }
+    public List<int[]> _vertexIndices;
     
-    public CbConverter(string path)
+    public RoomMeshReader(string path)
     {
         _fileStream = File.Open(path, FileMode.Open);
         using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
-        _logger = factory.CreateLogger<CbConverter>();
-        _textureVertex = new Dictionary<string, Vertex[]>();
-        _vertexIndices = new Dictionary<string, int>();
+        _logger = factory.CreateLogger<RoomMeshReader>();
+        TextureVertices = new List<Vertex[]>{};
+        _vertexIndices = new List<int[]>();
     }
     
-    ~CbConverter()
+    ~RoomMeshReader()
     {
         _fileStream.Close();
     }
@@ -91,7 +92,7 @@ public class CbConverter
             verticies[i] = ReadVertexData();
         }
 
-        _textureVertex[relativePath] = verticies;
+        TextureVertices.Add(verticies);
         _logger.LogInformation("Read {} vertices", vertexCount);
         var x = new byte[32];
         var triangleCount = ReadInt32();
@@ -99,8 +100,11 @@ public class CbConverter
         var indices = new int[triangleCount * 3];
         for (int i = 0; i < triangleCount * 3; i++)
         {
-            indices[i] = ReadInt32();
+            indices[i] =  ReadInt32();
         }
+
+        _indicesOffset += triangleCount * 3;
+        _vertexIndices.Add(indices);
     }
     public void ReadOpaque()
     {
@@ -266,9 +270,9 @@ public class CbConverter
         return new Model(ReadB3DString(), ReadVector3(), ReadVector3(), ReadVector3());
     }
     
-    public void Convert()
+    public void Read()
     {
-        _logger.LogInformation("Converting file: {}", _fileStream.Name);
+        _logger.LogInformation("Reading file: {}", _fileStream.Name);
         switch (ReadB3DString())
         {
             case "RoomMesh":
@@ -290,7 +294,8 @@ public class CbConverter
         GetInvisCollisions();
         if (_hasTriggers) GetTriggerBoxes();
         GetEntities();
-        
+       
+        _fileStream.Close();
         _logger.LogInformation("Finished");
     }
 }

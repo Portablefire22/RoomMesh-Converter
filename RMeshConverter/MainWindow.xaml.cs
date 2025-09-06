@@ -10,6 +10,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Win32;
+using RMeshConverter.Exporter;
+using RMeshConverter.Exporter.Obj;
 using RMeshConverter.RMesh;
 
 namespace RMeshConverter;
@@ -75,7 +77,11 @@ public partial class MainWindow : Window
 
     public void Convert(object sender, RoutedEventArgs routedEventArgs)
     {
-        var conv = new CbConverter(Config._files[0]);
-        conv.Convert();
+        var file = Config._files[0];
+        var name = file.Split("\\").Last().Replace(".rmesh", ".obj");
+        var reader = new RoomMeshReader(Config._files[0]);
+        reader.Read();
+        var writer = new RoomMeshToObjWriter($"{Config.OutputFolder}/{name}", reader);
+        writer.Convert();
     }
 }
