@@ -75,8 +75,7 @@ public partial class MainWindow : Window
 
     public void Convert(object sender, RoutedEventArgs routedEventArgs)
     {
-        var conv = new CbConverter(Config._files[6]);
- 
-        Console.WriteLine(conv.ReadB3DString());
+        var conv = new CbConverter(Config._files[0]);
+        conv.Convert();
     }
 }
