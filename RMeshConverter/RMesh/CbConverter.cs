@@ -171,6 +171,19 @@ public class CbConverter
     public void GetTriggerBoxes()
     {
         _logger.LogInformation("Reading Trigger Boxes");
+        var count = ReadInt32();
+        _logger.LogInformation("Trigger boxes: {}", count);
+        for (int i = 0; i < count; i++)
+        {
+            var vertexCount = ReadInt32();
+            for (int j = 0; j < vertexCount; j++)
+            {
+                var vert = new InvisibleCollisionVertex(ReadVector3());
+            }
+
+            var triangleCount = ReadInt32();
+            var triggerBoxName = ReadB3DString();
+        }
     }
 
     public void GetEntities()
