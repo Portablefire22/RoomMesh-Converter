@@ -11,7 +11,7 @@ namespace RMeshConverter.RMesh;
  *  At https://github.com/Koanyaku/godot_rmesh_import/blob/main/docs/rmesh_format_scp-cb.md
  */
 
-public class RoomMeshReader
+public class RoomMeshReader : IDisposable, IAsyncDisposable
 {
     private FileStream _fileStream;
     private ILogger _logger;
@@ -35,7 +35,7 @@ public class RoomMeshReader
     
     ~RoomMeshReader()
     {
-        _fileStream.Close();
+        Dispose(false);
     }
 
     public int ReadInt32()
@@ -305,6 +305,40 @@ public class RoomMeshReader
        
         _fileStream.Close();
         _logger.LogInformation("Finished");
+    }
+
+    private void ReleaseUnmanagedResources()
+    {
+        _vertexIndices.Clear();
+        TextureVertices.Clear();
+    }
+
+    private void Dispose(bool disposing)
+    {
+        ReleaseUnmanagedResources();
+        if (disposing)
+        {
+            _fileStream.Dispose();
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    private async ValueTask DisposeAsyncCore()
+    {
+        ReleaseUnmanagedResources();
+
+        await _fileStream.DisposeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore();
+        GC.SuppressFinalize(this);
     }
 }
 

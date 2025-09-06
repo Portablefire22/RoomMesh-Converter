@@ -6,7 +6,7 @@ using RMeshConverter.RMesh;
 
 namespace RMeshConverter.Exporter.Obj;
 
-public class RoomMeshToObjWriter
+public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
 {
     private RoomMeshReader _reader;
 
@@ -17,6 +17,10 @@ public class RoomMeshToObjWriter
     
     public RoomMeshToObjWriter(string path, RoomMeshReader reader)
     {
+        try
+        {
+            Directory.CreateDirectory(path.TrimEnd('\\').Remove(path.LastIndexOf('\\') + 1));
+        } catch {}
         _fileStream = File.Create(path);
         _reader = reader;
         
@@ -91,5 +95,17 @@ public class RoomMeshToObjWriter
         _logger.LogInformation("Wrote Geometric Vertices: {}", WriteGeometricVertices());
         _logger.LogInformation("Wrote Indices: {}", WriteVertexIndices()); 
         _fileStream.Close();
+    }
+
+    public void Dispose()
+    {
+        _reader.Dispose();
+        _fileStream.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _reader.DisposeAsync();
+        await _fileStream.DisposeAsync();
     }
 }

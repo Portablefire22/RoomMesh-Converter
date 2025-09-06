@@ -49,6 +49,7 @@ public partial class MainWindow : Window
         {
             case true:
                 txt.Text = fileDialog.FolderName;
+                Config.InputFolder = fileDialog.FolderName;
                 Config._files = Directory.GetFiles(fileDialog.FolderName, "*.rmesh", SearchOption.AllDirectories);
                 var counter = (Label)FindName("FileCounter");
                 counter.Content = $".rmesh Files: {Config._files.Length}";
@@ -87,10 +88,10 @@ public partial class MainWindow : Window
         {
             try
             {
-                var name = file.Split("\\").Last().Replace(".rmesh", ".obj");
-                var reader = new RoomMeshReader(file);
+                var name = file.Replace(".rmesh", ".obj").Replace(Config.InputFolder, "");
+                using var reader = new RoomMeshReader(file);
                 reader.Read();
-                var writer = new RoomMeshToObjWriter($"{Config.OutputFolder}/{name}", reader);
+                using var writer = new RoomMeshToObjWriter($"{Config.OutputFolder}{name}", reader);
                 writer.Convert();
             }
             catch (Exception e)
@@ -98,6 +99,7 @@ public partial class MainWindow : Window
 
             }
         });
+        GC.Collect();
         _logger.LogInformation("Finished Converting.");
     }
 }
