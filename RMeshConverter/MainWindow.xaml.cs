@@ -88,15 +88,16 @@ public partial class MainWindow : Window
         {
             try
             {
-                var name = file.Replace(".rmesh", ".obj").Replace(Config.InputFolder, "");
+                var relativePath = file.Split("\\").Last().Replace(".rmesh", "");
+                // var relativePath = file.Replace(".rmesh", ".obj").Replace(Config.InputFolder, "");
                 using var reader = new RoomMeshReader(file);
                 reader.Read();
-                using var writer = new RoomMeshToObjWriter($"{Config.OutputFolder}{name}", reader);
+                using var writer = new RoomMeshToObjWriter(relativePath, $"{Config.OutputFolder}\\{relativePath}", file, reader);
                 writer.Convert();
             }
             catch (Exception e)
             {
-
+            
             }
         });
         GC.Collect();

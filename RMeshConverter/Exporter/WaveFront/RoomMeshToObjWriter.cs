@@ -10,20 +10,29 @@ public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
 {
     private RoomMeshReader _reader;
 
+    private string _name;
+    
     private FileStream _fileStream;
 
     private ILogger _logger;
+
+    private string _path;
+
+    private string _fileDirectory;
     
-    
-    public RoomMeshToObjWriter(string path, RoomMeshReader reader)
+    public RoomMeshToObjWriter(string name, string path, string filePath, RoomMeshReader reader)
     {
         try
         {
-            Directory.CreateDirectory(path.TrimEnd('\\').Remove(path.LastIndexOf('\\') + 1));
+            Directory.CreateDirectory(path);
         } catch {}
-        _fileStream = File.Create(path);
-        _reader = reader;
+
+        _name = name;
+        _fileDirectory = filePath.Replace($"{_name}.rmesh", "");
         
+        _fileStream = File.Create($"{path}\\{_name}.obj");
+        _reader = reader;
+        _path = path;
         using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
         _logger = factory.CreateLogger<RoomMeshReader>();
     }
@@ -49,8 +58,14 @@ public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
             foreach (var vertex in texture)
             {
                 WriteVertexPosition(vertex.Position);
-                WriteVertexUv(vertex.Uv);
                 i++;
+            }
+        } 
+        foreach (var texture in dict)
+        {
+            foreach (var vertex in texture)
+            {
+                WriteVertexUv(vertex.Uv);
             }
         }
 
@@ -72,6 +87,9 @@ public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
         {
             var str = Encoding.UTF8.GetBytes($"g {l}\n");
             _fileStream.Write(str);
+            // Specify what material this should use
+            str = Encoding.UTF8.GetBytes($"usemtl {_reader.TexturePaths[l]}\n");
+            _fileStream.Write(str);
             for (int j = 0; j < texture.Length; j += 3)
             {
                WriteIndex(texture[new Range(j,j + 3)]);
@@ -81,9 +99,13 @@ public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
         }
         return i;
     }
+
+
     
     public void Convert()
     {
+        var str = Encoding.UTF8.GetBytes($"mtllib {_name}.mtl\n");
+        _fileStream.Write(str);
         // OBJ indices start at 1 :)
         foreach (var indices in _reader._vertexIndices)
         {
@@ -93,7 +115,11 @@ public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
             }
         }
         _logger.LogInformation("Wrote Geometric Vertices: {}", WriteGeometricVertices());
-        _logger.LogInformation("Wrote Indices: {}", WriteVertexIndices()); 
+        _logger.LogInformation("Wrote Indices: {}", WriteVertexIndices());
+
+        var mtl = new MtlWriter($"{_path}", _name,  _fileDirectory, _reader.TexturePaths);
+        mtl.Convert();
+        
         _fileStream.Close();
     }
 

@@ -21,7 +21,7 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     private int _textureCount;
     private int _indicesOffset;
     public List<Vertex[]> TextureVertices { get; set; }
-    public string[] TexturePaths { get; set; }
+    public List<string> TexturePaths { get; set; }
     public List<int[]> _vertexIndices;
     
     public RoomMeshReader(string path)
@@ -30,6 +30,7 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
         using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
         _logger = factory.CreateLogger<RoomMeshReader>();
         TextureVertices = new List<Vertex[]>{};
+        TexturePaths = new List<string>();
         _vertexIndices = new List<int[]>();
     }
     
@@ -109,6 +110,7 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     {
         var relativePath = ReadB3DString();
         _logger.LogInformation("Found Opaque Texture: {}", relativePath);
+        TexturePaths.Add(relativePath);
         ReadTextureObjectData(relativePath);
     }
     public void ReadLightmap()
@@ -121,6 +123,7 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     {
         var relativePath = ReadB3DString();
         _logger.LogInformation("Found Transparency Texture: {}", relativePath);
+        TexturePaths.Add(relativePath);
         ReadTextureObjectData(relativePath);
     }
     
