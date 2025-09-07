@@ -18,13 +18,13 @@ public class ObjExporter : Exporter
 
     private void WriteVertexPosition(Vector3 pos)
     {
-        var str = Encoding.UTF8.GetBytes($"v {pos.X} {pos.Y} {pos.Z}\n");
+        var str = Encoding.UTF8.GetBytes($"v {pos.X} {pos.Y} {-pos.Z}\n");
         OutputFileStream.Write(str);
     }
 
     private void WriteVertexUv(Vector2 pos)
     {
-        var str = Encoding.UTF8.GetBytes($"vt {-pos.X} {-pos.Y}\n");
+        var str = Encoding.UTF8.GetBytes($"vt {pos.X} {-pos.Y}\n");
         OutputFileStream.Write(str);
     }
     
@@ -51,9 +51,9 @@ public class ObjExporter : Exporter
         return i;
     }
 
-    private void WriteIndex(int[] face)
+    private void WriteIndex(int[] face, int x)
     {
-        var str = Encoding.UTF8.GetBytes($"f {face[0]}/{face[0]} {face[1]}/{face[1]} {face[2]}/{face[2]}\n");
+        var str = Encoding.UTF8.GetBytes($"f {face[0]}/{face[0]} {face[2]}/{face[2]} {face[1]}/{face[1]}\n");
         OutputFileStream.Write(str);
     }
     
@@ -71,7 +71,7 @@ public class ObjExporter : Exporter
             OutputFileStream.Write(str);
             for (int j = 0; j < texture.Length; j += 3)
             {
-               WriteIndex(texture[new Range(j,j + 3)]);
+               WriteIndex(texture[new Range(j,j + 3)], j);
                i += 3;
             }
             l++;
