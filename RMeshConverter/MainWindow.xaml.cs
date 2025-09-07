@@ -31,6 +31,8 @@ public partial class MainWindow : Window
     private bool _isFormatSelected;
 
     private string _selectedFormat;
+
+    private bool _folderPer;
     
     public MainWindow()
     {
@@ -128,13 +130,19 @@ public partial class MainWindow : Window
     private Exporter.Exporter GetExporter(string exporter, string relativePath, string file, RoomMeshReader reader)
     {
         Exporter.Exporter exp;
+        string outputFolder = Config.OutputFolder;
+        if (_folderPer)
+        {
+            outputFolder += $"\\{relativePath}";
+        }
+        
         switch (exporter)
         {
             case "WaveFront Obj":
-                exp = new ObjExporter(relativePath, $"{Config.OutputFolder}\\{relativePath}", file, reader);
+                exp = new ObjExporter(relativePath, outputFolder, file, reader);
                 break;
             case "Valve Vmdl":
-                exp = new VmdlExporter(reader, file, relativePath, $"{Config.OutputFolder}\\{relativePath}");
+                exp = new VmdlExporter(reader, file, relativePath, outputFolder);
                 break;
             default:
                 throw new ArgumentException($"exporter by name '{exporter}' does not exist");

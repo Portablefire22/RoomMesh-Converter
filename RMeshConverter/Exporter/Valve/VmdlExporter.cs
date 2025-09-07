@@ -9,6 +9,7 @@ namespace RMeshConverter.Exporter.Valve;
 public class VmdlExporter : Exporter
 {
     private Exporter _objExporter;
+    private string _root = "models";
     public VmdlExporter(RoomMeshReader reader, string inputFilePath, string name, string outputDirectory) : base(reader, inputFilePath, name, outputDirectory)
     {
         using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
@@ -47,20 +48,34 @@ public class VmdlExporter : Exporter
         OutputFileStream.Write("]\n},\n]\n}\n}"u8.ToArray());
     }
 
+    private void WriteMaterialRemaps()
+    {
+        foreach (var texture in Reader.TexturePaths)
+        {
+            var textureName = texture.Remove(texture.LastIndexOf('.'));
+            var str = $"{{\nfrom=\"{textureName}.vmat\"\n" +
+                      $"to=\"{_root}/source/{textureName}.vmat\"\n" +
+                      $"}},\n";
+            OutputFileStream.Write(Encoding.UTF8.GetBytes(str));
+        }
+    }
+    
     private void WriteMaterialGroup()
     {
-        OutputFileStream.Write(("{\n"u8 +
+        OutputFileStream.Write("{\n"u8 +
                                 "_class=\"MaterialGroupList\"\n"u8 +
                                 "children =\n"u8 +
                                 "[\n"u8 +
                                 "{\n"u8 +
                                 "_class=\"DefaultMaterialGroup\"\n"u8 +
-                                "remaps = []\n"u8 +
-                                "use_global_default = true\n"u8 +
+                                "remaps = [\n"u8);
+        WriteMaterialRemaps();
+        OutputFileStream.Write( "]\n"u8 +
+                                "use_global_default = false\n"u8 +
                                 "global_default_material = \"materials/default.vmat\"\n"u8 +
                                 "},\n"u8 +
                                 "]\n"u8 +
-                                "},\n"u8));    
+                                "},\n"u8);    
     }
 
     private void WriteRenderMesh()
@@ -70,7 +85,7 @@ public class VmdlExporter : Exporter
                                 "children = [\n" +
                                 "{\n" +
                                 "_class=\"RenderMeshFile\"\n" +
-                                $"filename=\"source/{Name}.obj\"\n" +
+                                $"filename=\"{_root}/source/{Name}.obj\"\n" +
                                 "import_translation = [0.0, 0.0, 0.0]\n" +
                                 "import_rotation=[0.0,0.0,0.0]\n" +
                                 "import_scale=1.0\n" +
@@ -101,7 +116,9 @@ public class VmdlExporter : Exporter
         WriteRootNode();
         WriteChildren();
         WriteCloseRoot();
-        
         OutputFileStream.Close();
+
+        var matExporter = new VmatWriter(Reader.TexturePaths, InputDirectory, $"{OutputDirectory}\\source", Name);
+        matExporter.Convert();
     }
 }

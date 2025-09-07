@@ -1,46 +1,38 @@
 ﻿using System.IO;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using RMeshConverter.Exporter.Valve;
 
 namespace RMeshConverter.Exporter.Obj;
 
-public class MtlWriter
+public class MtlWriter : MaterialWriter
 {
-    private List<string> _textureLocations;
-    private FileStream _fileStream;
-
-    private string _originalDirectory;
-    private string _name;
-    private string _path;
-    public MtlWriter(string path, string name, string originalDirectory, List<string> textureLocations)
+    public MtlWriter(string path, string name, string originalDirectory, List<string> textureLocations) 
+        : base(textureLocations, originalDirectory, path, name)
     {
-        _name = name;
-        _path = path;
-        _originalDirectory = originalDirectory;
-        _fileStream = File.Create($"{path}\\{name}.mtl");
-        _textureLocations = textureLocations;
+        using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
+        Logger = factory.CreateLogger<MtlWriter>();
+        
+        OutputFileStream = File.Create($"{path}\\{name}.mtl");
     }
 
-    private void CopyTexture(string name)
-    {
-        File.Copy($"{_originalDirectory}{name}", $"{_path}\\{name}", true);
-    }
-    public void Convert()
+    public override void Convert()
     {
         var str = Encoding.UTF8.GetBytes($"# Lilith's RoomMesh Converter\n" +
                                          $"# https://github.com/Portablefire22/RoomMesh-Converter\n");
-        _fileStream.Write(str);
-        foreach (var path in _textureLocations)
+        OutputFileStream.Write(str);
+        foreach (var path in TextureLocations)
         {
             CopyTexture(path);
             str = Encoding.UTF8.GetBytes($"newmtl {path}\n");
-            _fileStream.Write(str);
+            OutputFileStream.Write(str);
             str = Encoding.UTF8.GetBytes($"map_Ka {path}\n");
-            _fileStream.Write(str);
+            OutputFileStream.Write(str);
             str = Encoding.UTF8.GetBytes($"map_Kd {path}\n");
-            _fileStream.Write(str);
+            OutputFileStream.Write(str);
         }
 
-        _fileStream.Close();
+        OutputFileStream.Close();
     }
     
 }
