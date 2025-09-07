@@ -6,53 +6,32 @@ using RMeshConverter.RMesh;
 
 namespace RMeshConverter.Exporter.Obj;
 
-public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
+public class ObjExporter : Exporter
 {
-    private RoomMeshReader _reader;
-
-    private string _name;
     
-    private FileStream _fileStream;
-
-    private ILogger _logger;
-
-    private string _path;
-
-    private string _fileDirectory;
-    
-    public RoomMeshToObjWriter(string name, string path, string filePath, RoomMeshReader reader)
+    public ObjExporter(string name, string outputDirectory, string filePath, RoomMeshReader reader) : base(reader, filePath, name, outputDirectory)
     {
-        try
-        {
-            Directory.CreateDirectory(path);
-        } catch {}
-
-        _name = name;
-        _fileDirectory = filePath.Replace($"{_name}.rmesh", "");
-        
-        _fileStream = File.Create($"{path}\\{_name}.obj");
-        _reader = reader;
-        _path = path;
+        OutputFileStream = File.Create($"{OutputDirectory}\\{Name}.obj");
         using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
-        _logger = factory.CreateLogger<RoomMeshReader>();
+        Logger = factory.CreateLogger<RoomMeshReader>();
     }
 
     private void WriteVertexPosition(Vector3 pos)
     {
         var str = Encoding.UTF8.GetBytes($"v {pos.X} {pos.Y} {pos.Z}\n");
-        _fileStream.Write(str);
+        OutputFileStream.Write(str);
     }
 
     private void WriteVertexUv(Vector2 pos)
     {
         var str = Encoding.UTF8.GetBytes($"vt {-pos.X} {-pos.Y}\n");
-        _fileStream.Write(str);
+        OutputFileStream.Write(str);
     }
     
     private int WriteGeometricVertices()
     {
         int i = 0;
-        var dict = _reader.TextureVertices;
+        var dict = Reader.TextureVertices;
         foreach (var texture in dict)
         {
             foreach (var vertex in texture)
@@ -75,21 +54,21 @@ public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
     private void WriteIndex(int[] face)
     {
         var str = Encoding.UTF8.GetBytes($"f {face[0]}/{face[0]} {face[1]}/{face[1]} {face[2]}/{face[2]}\n");
-        _fileStream.Write(str);
+        OutputFileStream.Write(str);
     }
     
     private int WriteVertexIndices()
     {
         int i = 0;
         var l = 0;
-        var list = _reader._vertexIndices;
+        var list = Reader._vertexIndices;
         foreach (var texture in list)
         {
             var str = Encoding.UTF8.GetBytes($"g {l}\n");
-            _fileStream.Write(str);
+            OutputFileStream.Write(str);
             // Specify what material this should use
-            str = Encoding.UTF8.GetBytes($"usemtl {_reader.TexturePaths[l]}\n");
-            _fileStream.Write(str);
+            str = Encoding.UTF8.GetBytes($"usemtl {Reader.TexturePaths[l]}\n");
+            OutputFileStream.Write(str);
             for (int j = 0; j < texture.Length; j += 3)
             {
                WriteIndex(texture[new Range(j,j + 3)]);
@@ -102,38 +81,40 @@ public class RoomMeshToObjWriter : IDisposable, IAsyncDisposable
 
 
     
-    public void Convert()
+    public override void Convert()
     {
         var str = Encoding.UTF8.GetBytes($"# Lilith's RoomMesh Converter\n" +
                                          $"# https://github.com/Portablefire22/RoomMesh-Converter\n" +
-                                         $"mtllib {_name}.mtl\n");
-        _fileStream.Write(str);
+                                         $"mtllib {Name}.mtl\n");
+        OutputFileStream.Write(str);
         // OBJ indices start at 1 :)
-        foreach (var indices in _reader._vertexIndices)
+        foreach (var indices in Reader._vertexIndices)
         {
             for (int i = 0; i < indices.Length; i++)
             {
                 indices[i] += 1;
             }
         }
-        _logger.LogInformation("Wrote Geometric Vertices: {}", WriteGeometricVertices());
-        _logger.LogInformation("Wrote Indices: {}", WriteVertexIndices());
+        Logger.LogInformation("Wrote Geometric Vertices: {}", WriteGeometricVertices());
+        Logger.LogInformation("Wrote Indices: {}", WriteVertexIndices());
 
-        var mtl = new MtlWriter($"{_path}", _name,  _fileDirectory, _reader.TexturePaths);
+        var mtl = new MtlWriter($"{OutputDirectory}", Name,  InputDirectory, Reader.TexturePaths);
         mtl.Convert();
         
-        _fileStream.Close();
+        OutputFileStream.Close();
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
-        _reader.Dispose();
-        _fileStream.Dispose();
+        Reader.Dispose();
+        OutputFileStream.Dispose();
+        GC.SuppressFinalize(this);
     }
 
-    public async ValueTask DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
-        await _reader.DisposeAsync();
-        await _fileStream.DisposeAsync();
+        await Reader.DisposeAsync();
+        await OutputFileStream.DisposeAsync();
+        GC.SuppressFinalize(this);
     }
 }
