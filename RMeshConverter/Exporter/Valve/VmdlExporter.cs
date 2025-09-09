@@ -16,7 +16,6 @@ public class VmdlExporter : Exporter
         Logger = factory.CreateLogger<VmdlExporter>();
         OutputFileStream = File.Create($"{OutputDirectory}\\{Name}.vmdl");
         
-        // Vmdl files require an initial file, we use OBJ for this 
         _objExporter = new ObjExporter(name, $"{outputDirectory}\\source", inputFilePath, reader);
     }
 

@@ -26,7 +26,7 @@
         <TextBox Grid.Row = "0" Grid.Column="2" Name="FilePickerTextBox"></TextBox>
         <Button Grid.Row="1" Grid.Column="1" Click="SetOutputFolder">Browse</Button>
         <TextBox Grid.Row = "1" Grid.Column="2"  Name="OutputFilePickerTextBox"></TextBox>
-        <Button Grid.Row="2" Grid.Column="0" IsEnabled="false" Click="Convert" Name="ConvertButton">Convert</Button>
+        <Button Grid.Row="2" Grid.Column="0" IsEnabled="true" Click="Convert" Name="ConvertButton">Convert</Button>
         <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{StaticResource ExporterFormats}" SelectionChanged="Selector_OnSelectionChanged"></ComboBox>
         <Label Grid.Row="2" Grid.Column="2" Name="FileCounter">No Files Found</Label>
     </Grid>

@@ -11,11 +11,8 @@ namespace RMeshConverter.RMesh;
  *  At https://github.com/Koanyaku/godot_rmesh_import/blob/main/docs/rmesh_format_scp-cb.md
  */
 
-public class RoomMeshReader : IDisposable, IAsyncDisposable
+public class RoomMeshReader : MeshReader
 {
-    private FileStream _fileStream;
-    private ILogger _logger;
-    
     private bool _hasTriggers;
 
     private int _textureCount;
@@ -26,9 +23,9 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     
     public RoomMeshReader(string path)
     {
-        _fileStream = File.Open(path, FileMode.Open);
+        InputFileStream = File.Open(path, FileMode.Open);
         using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
-        _logger = factory.CreateLogger<RoomMeshReader>();
+        Logger = factory.CreateLogger<RoomMeshReader>();
         TextureVertices = new List<Vertex[]>{};
         TexturePaths = new List<string>();
         _vertexIndices = new List<int[]>();
@@ -42,7 +39,7 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     public int ReadInt32()
     {
         byte[] buf = new byte[4];
-        _fileStream.ReadExactly(buf, 0, 4);
+        InputFileStream.ReadExactly(buf, 0, 4);
         return BitConverter.ToInt32(buf);
     }
     
@@ -50,14 +47,14 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     {
         var length = ReadInt32();
         var buf = new byte[length];
-        _fileStream.ReadExactly(buf, 0, length);
+        InputFileStream.ReadExactly(buf, 0, length);
         return Encoding.Default.GetString(buf);
     }
 
     public float ReadFloat32()
     {
         byte[] buf = new byte[4];
-        _fileStream.ReadExactly(buf, 0, 4);
+        InputFileStream.ReadExactly(buf, 0, 4);
         return BitConverter.ToSingle(buf);
     }
 
@@ -73,12 +70,12 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
 
     public Vertex ReadVertexData()
     {
-        var x = _fileStream.Position;
+        var x = InputFileStream.Position;
         var position = ReadVector3();
         var uv = ReadVector2();
         var lightmapUv = ReadVector2();
         var buf = new byte[3];
-        _fileStream.ReadExactly(buf, 0, 3);
+        InputFileStream.ReadExactly(buf, 0, 3);
         
         return new Vertex(position, uv, lightmapUv, buf);
     }
@@ -86,7 +83,7 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     public void ReadTextureObjectData(string relativePath)
     {
         var vertexCount = ReadInt32();
-        _logger.LogInformation("Associated Vertex Count: {}", vertexCount);
+        Logger.LogInformation("Associated Vertex Count: {}", vertexCount);
         var verticies = new Vertex[vertexCount];
         for (int i = 0; i < vertexCount; i++)
         {
@@ -94,10 +91,10 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
         }
 
         TextureVertices.Add(verticies);
-        _logger.LogInformation("Read {} vertices", vertexCount);
+        Logger.LogInformation("Read {} vertices", vertexCount);
         var x = new byte[32];
         var triangleCount = ReadInt32();
-        _logger.LogInformation("Triangle Count: {}", triangleCount);
+        Logger.LogInformation("Triangle Count: {}", triangleCount);
         var indices = new int[triangleCount * 3];
         for (int i = 0; i < triangleCount * 3; i++)
         {
@@ -109,29 +106,29 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     public void ReadOpaque()
     {
         var relativePath = ReadB3DString();
-        _logger.LogInformation("Found Opaque Texture: {}", relativePath);
+        Logger.LogInformation("Found Opaque Texture: {}", relativePath);
         TexturePaths.Add(relativePath);
         ReadTextureObjectData(relativePath);
     }
     public void ReadLightmap()
     {
         var relativePath = ReadB3DString();
-        _logger.LogInformation("Found Lightmap Texture: {}", relativePath);
+        Logger.LogInformation("Found Lightmap Texture: {}", relativePath);
     }
 
     public void ReadTransparency()
     {
         var relativePath = ReadB3DString();
-        _logger.LogInformation("Found Transparency Texture: {}", relativePath);
+        Logger.LogInformation("Found Transparency Texture: {}", relativePath);
         TexturePaths.Add(relativePath);
         ReadTextureObjectData(relativePath);
     }
     
     public void ReadTexture()
     { 
-        var flag = IntToTextureFlag(_fileStream.ReadByte());
+        var flag = IntToTextureFlag(InputFileStream.ReadByte());
         ReadLightmap();
-        flag = IntToTextureFlag(_fileStream.ReadByte());
+        flag = IntToTextureFlag(InputFileStream.ReadByte());
         switch (flag)
         {
             case TextureType.Opaque:
@@ -157,17 +154,17 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     public void GetInvisCollisions()
     {
         var invisCollisions = ReadInt32();
-        _logger.LogInformation("Invisible Collisions: {}", invisCollisions);
+        Logger.LogInformation("Invisible Collisions: {}", invisCollisions);
         if (invisCollisions == 0) return;
         var invisCollisionsVertices = ReadInt32();
-        _logger.LogInformation("Invisible Collisions Vertices: {}", invisCollisionsVertices);
+        Logger.LogInformation("Invisible Collisions Vertices: {}", invisCollisionsVertices);
         for (int i = 0; i < invisCollisionsVertices; i++)
         {
             var vert = new InvisibleCollisionVertex(ReadVector3());
         }
         
         var invisCollisionsTriangles = ReadInt32();
-        _logger.LogInformation("Invisible Collisions Triangles: {}", invisCollisionsTriangles);
+        Logger.LogInformation("Invisible Collisions Triangles: {}", invisCollisionsTriangles);
         for (int i = 0; i < invisCollisionsTriangles * 3; i++)
         {
             ReadInt32(); // index
@@ -176,9 +173,9 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
 
     public void GetTriggerBoxes()
     {
-        _logger.LogInformation("Reading Trigger Boxes");
+        Logger.LogInformation("Reading Trigger Boxes");
         var count = ReadInt32();
-        _logger.LogInformation("Trigger boxes: {}", count);
+        Logger.LogInformation("Trigger boxes: {}", count);
         for (int i = 0; i < count; i++)
         {
             var surfaceAmount = ReadInt32();
@@ -204,7 +201,7 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     public void GetEntities()
     {
         var entityCount = ReadInt32();
-        _logger.LogInformation("Entity Count: {}", entityCount);
+        Logger.LogInformation("Entity Count: {}", entityCount);
         for (int i = 0; i < entityCount; i++)
         {
             var type = ReadB3DString();
@@ -213,31 +210,31 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
             {
                 case "screen":
                     e = ReadScreen();
-                    _logger.LogInformation("Screen Position: {}", e.Position.ToString());
+                    Logger.LogInformation("Screen Position: {}", e.Position.ToString());
                     break;
                 case "waypoint":
                     e = ReadWaypoint();
-                    _logger.LogInformation("Waypoint Position: {}", e.Position.ToString());
+                    Logger.LogInformation("Waypoint Position: {}", e.Position.ToString());
                     break;
                 case "light":
                     e = ReadLight();
-                    _logger.LogInformation("Light Position: {}", e.Position.ToString());
+                    Logger.LogInformation("Light Position: {}", e.Position.ToString());
                     break;
                 case "spotlight":
                     e = ReadSpotlight();
-                    _logger.LogInformation("Spotlight Position: {}", e.Position.ToString());
+                    Logger.LogInformation("Spotlight Position: {}", e.Position.ToString());
                     break;
                 case "soundemitter":
                     e = ReadSoundEmitter();
-                    _logger.LogInformation("Sound Emitter Position: {}", e.Position.ToString());
+                    Logger.LogInformation("Sound Emitter Position: {}", e.Position.ToString());
                     break;
                 case "playerstart":
                     e = ReadPlayerStart();
-                    _logger.LogInformation("Player Start Position: {}", e.Position.ToString());
+                    Logger.LogInformation("Player Start Position: {}", e.Position.ToString());
                     break;
                 case "model":
                     var m = ReadModel();
-                    _logger.LogInformation("Model Name: {}", m.Name);
+                    Logger.LogInformation("Model Name: {}", m.Name);
                     break;
                 default:
                     throw new RoomMeshException("invalid entity type");
@@ -283,7 +280,7 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     
     public void Read()
     {
-        _logger.LogInformation("Reading file: {}", _fileStream.Name);
+        Logger.LogInformation("Reading file: {}", InputFileStream.Name);
         switch (ReadB3DString())
         {
             case "RoomMesh":
@@ -294,9 +291,9 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
             default:
                 throw new RoomMeshException("not a .rmesh file, missing 'RoomMesh' header");
         }
-        _logger.LogInformation("Has triggers: {}", _hasTriggers);
+        Logger.LogInformation("Has triggers: {}", _hasTriggers);
         _textureCount = ReadInt32();
-        _logger.LogInformation("Unique Textures: {}", _textureCount);
+        Logger.LogInformation("Unique Textures: {}", _textureCount);
         for (int i = 0; i < _textureCount; i++)
         {
             ReadTexture();
@@ -306,8 +303,8 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
         if (_hasTriggers) GetTriggerBoxes();
         GetEntities();
        
-        _fileStream.Close();
-        _logger.LogInformation("Finished");
+        InputFileStream.Close();
+        Logger.LogInformation("Finished");
     }
 
     private void ReleaseUnmanagedResources()
@@ -321,11 +318,11 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
         ReleaseUnmanagedResources();
         if (disposing)
         {
-            _fileStream.Dispose();
+            InputFileStream.Dispose();
         }
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
@@ -335,7 +332,7 @@ public class RoomMeshReader : IDisposable, IAsyncDisposable
     {
         ReleaseUnmanagedResources();
 
-        await _fileStream.DisposeAsync();
+        await InputFileStream.DisposeAsync();
     }
 
     public async ValueTask DisposeAsync()

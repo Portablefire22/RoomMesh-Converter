@@ -16,6 +16,7 @@ using RMeshConverter.Exporter;
 using RMeshConverter.Exporter.Obj;
 using RMeshConverter.Exporter.Valve;
 using RMeshConverter.RMesh;
+using RMeshConverter.XModel;
 
 namespace RMeshConverter;
 
@@ -107,22 +108,24 @@ public partial class MainWindow : Window
     
     public void Convert(object sender, RoutedEventArgs routedEventArgs)
     {
-        Parallel.ForEach(Config._files, file =>
-        {
-            try
-            {
-                var relativePath = file.Split("\\").Last().Replace(".rmesh", "");
-                // var relativePath = file.Replace(".rmesh", ".obj").Replace(Config.InputFolder, "");
-                using var reader = new RoomMeshReader(file);
-                reader.Read();
-                using var writer = GetExporter(_selectedFormat, relativePath, file, reader);
-                writer.Convert();
-            }
-            catch (Exception e)
-            {
-            
-            }
-        });
+        // Parallel.ForEach(Config._files, file =>
+        // {
+        //     try
+        //     {
+        //         var relativePath = file.Split("\\").Last().Replace(".rmesh", "");
+        //         // var relativePath = file.Replace(".rmesh", ".obj").Replace(Config.InputFolder, "");
+        //         using var reader = new RoomMeshReader(file);
+        //         reader.Read();
+        //         using var writer = GetExporter(_selectedFormat, relativePath, file, reader);
+        //         writer.Convert();
+        //     }
+        //     catch (Exception e)
+        //     {
+        //     
+        //     }
+        // });
+        var x = new XAsciiReader("Z:\\SteamLibrary\\steamapps\\common\\SCP Containment Breach Multiplayer\\GFX\\items\\keycard.x");
+        x.Convert();
         GC.Collect();
         _logger.LogInformation("Finished Converting.");
     }
@@ -141,8 +144,15 @@ public partial class MainWindow : Window
             case "WaveFront Obj":
                 exp = new ObjExporter(relativePath, outputFolder, file, reader);
                 break;
-            case "Valve Vmdl":
+            case "FBX (Binary)":
+                exp = new FbxExporter(reader, file, relativePath, outputFolder);
+                break;
+            case "S&Box Vmdl (Obj)":
                 exp = new VmdlExporter(reader, file, relativePath, outputFolder);
+                break;
+            case "S&Box Vmdl (FBX Binary)":
+                // exp = new VmdlExporter(reader, file, relativePath, outputFolder);
+                throw new NotImplementedException("S&Box FBX has not yet been implemented");
                 break;
             default:
                 throw new ArgumentException($"exporter by name '{exporter}' does not exist");
@@ -160,7 +170,11 @@ public partial class MainWindow : Window
         {
             case "WaveFront Obj":
                 break;
-            case "Valve Vmdl":
+            case "FBX (Binary)":
+                break;
+            case "S&Box Vmdl (Obj)":
+                break;
+            case "S&Box Vmdl (FBX Binary)":
                 break;
             default:
                 _isFormatSelected = false;

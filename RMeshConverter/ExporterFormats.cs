@@ -8,6 +8,6 @@ public class ExporterFormats : ObservableCollection<string>
     public ExporterFormats()
     {
         Add("WaveFront Obj");
-        Add("Valve Vmdl");
+        Add("S&Box Vmdl (Obj)");
     }
 }
