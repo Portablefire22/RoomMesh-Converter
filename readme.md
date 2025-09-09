@@ -10,12 +10,13 @@ what the catch is, and it's the fact that some stuff just blatantly does not wor
 
 - Exporting room meshes to OBJ
 - Automatic material generation
+- Automatic S&Box file generation
 
 # What doesn't work
 
 - Entities
-- UV mapping is slightly off on various objects
 - Triggers
+- External Models (.x model includes)
 
 # Credit
 
