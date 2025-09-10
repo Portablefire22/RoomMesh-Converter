@@ -53,7 +53,9 @@ public class ObjRoomMeshExporter : ObjExporter
             WriteLine($"usemtl {Reader.TexturePaths[l]}");
             for (int j = 0; j < texture.Length; j += 3)
             {
-               WriteIndex(texture[new Range(j,j + 3)]);
+                var ind = texture[new Range(j, j +  3)];
+                ind = new[] { ind[0], ind[2], ind[1] };
+               WriteIndex(ind);
                i += 3;
             }
             l++;
@@ -78,13 +80,6 @@ public class ObjRoomMeshExporter : ObjExporter
     {
         Reader.Dispose();
         OutputFileStream.Dispose();
-        GC.SuppressFinalize(this);
-    }
-
-    public override async ValueTask DisposeAsync()
-    {
-        await Reader.DisposeAsync();
-        await OutputFileStream.DisposeAsync();
         GC.SuppressFinalize(this);
     }
 }
