@@ -11,12 +11,13 @@ what the catch is, and it's the fact that some stuff just blatantly does not wor
 - Exporting room meshes to OBJ
 - Automatic material generation
 - Automatic S&Box file generation
+- Simple DirectX (.x) model conversion (models with custom templates, e.g. animations, will not work)
 
 # What doesn't work
 
 - Entities
 - Triggers
-- External Models (.x model includes)
+- External Model Animations & Skin renderers
 
 # Credit
 
