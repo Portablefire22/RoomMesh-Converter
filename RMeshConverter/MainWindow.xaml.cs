@@ -16,6 +16,7 @@ using RMeshConverter.Exporter;
 using RMeshConverter.Exporter.Obj;
 using RMeshConverter.Exporter.Valve;
 using RMeshConverter.RMesh;
+using RMeshConverter.RMesh.Entity;
 using RMeshConverter.XModel;
 
 namespace RMeshConverter;
@@ -61,9 +62,10 @@ public partial class MainWindow : Window
             case true:
                 txt.Text = fileDialog.FolderName;
                 Config.InputFolder = fileDialog.FolderName;
-                Config._files = Directory.GetFiles(fileDialog.FolderName, "*.rmesh", SearchOption.AllDirectories);
+                Config.Files = Directory.GetFiles(fileDialog.FolderName, "*.rmesh", SearchOption.AllDirectories);
+                Config.ModelFiles = Directory.GetFiles(fileDialog.FolderName, "*.x", SearchOption.AllDirectories);
                 var counter = (Label)FindName("FileCounter");
-                counter.Content = $".rmesh Files: {Config._files.Length}";
+                counter.Content = $".rmesh Files: {Config.Files.Length}";
                 _isInputSelected = true;
                 break;    
             default:
@@ -108,47 +110,62 @@ public partial class MainWindow : Window
     
     public void Convert(object sender, RoutedEventArgs routedEventArgs)
     {
-        // Parallel.ForEach(Config._files, file =>
-        // {
-        //     try
-        //     {
-        //         var relativePath = file.Split("\\").Last().Replace(".rmesh", "");
-        //         // var relativePath = file.Replace(".rmesh", ".obj").Replace(Config.InputFolder, "");
-        //         using var reader = new RoomMeshReader(file);
-        //         reader.Read();
-        //         using var writer = GetExporter(_selectedFormat, relativePath, file, reader);
-        //         writer.Convert();
-        //     }
-        //     catch (Exception e)
-        //     {
-        //     
-        //     }
-        // });
-        var x = new XAsciiReader("Z:\\SteamLibrary\\steamapps\\common\\SCP Containment Breach Multiplayer\\GFX\\items\\keycard.x");
-        x.Convert();
+        Parallel.ForEach(Config.Files, file =>
+        {
+            try
+            {
+                var name = file.Split("\\").Last().Replace(".rmesh", "");
+                using var reader = new RoomMeshReader(file);
+                reader.Read();
+                
+                using var writer = GetExporter(_selectedFormat, name, file, reader);
+                writer.Convert();
+            }
+            catch (Exception e)
+            {
+                _logger.LogCritical("{}", e); 
+            }
+        });
+
+        Parallel.ForEach(Config.ModelFiles, file =>
+        {
+            try
+            {
+                var name = file.Split("\\").Last().Replace(".x", "");
+                using var conv = new XAsciiReader(file);
+                conv.Convert();
+                using var xpr = new XExporter(conv, file, name, $"{Config.OutputFolder}\\Models");
+                xpr.Convert();
+            }
+            catch (Exception e)
+            {
+                _logger.LogCritical("{}", e); 
+            }
+        });
+        
         GC.Collect();
         _logger.LogInformation("Finished Converting.");
     }
 
-    private Exporter.Exporter GetExporter(string exporter, string relativePath, string file, RoomMeshReader reader)
+    private Exporter.MeshExporter GetExporter(string exporter, string name, string file, RoomMeshReader reader)
     {
-        Exporter.Exporter exp;
+        Exporter.MeshExporter exp;
         string outputFolder = Config.OutputFolder;
         if (_folderPer)
         {
-            outputFolder += $"\\{relativePath}";
+            outputFolder += $"\\{name}";
         }
         
         switch (exporter)
         {
             case "WaveFront Obj":
-                exp = new ObjExporter(relativePath, outputFolder, file, reader);
+                exp = new ObjRoomMeshExporter(name, outputFolder, file, reader);
                 break;
             case "FBX (Binary)":
-                exp = new FbxExporter(reader, file, relativePath, outputFolder);
+                exp = new FbxRoomMeshExporter(reader, file, name, outputFolder);
                 break;
             case "S&Box Vmdl (Obj)":
-                exp = new VmdlExporter(reader, file, relativePath, outputFolder);
+                exp = new VmdlRoomMeshExporter(reader, file, name, outputFolder);
                 break;
             case "S&Box Vmdl (FBX Binary)":
                 // exp = new VmdlExporter(reader, file, relativePath, outputFolder);
@@ -169,11 +186,8 @@ public partial class MainWindow : Window
         switch (e.AddedItems[0])
         {
             case "WaveFront Obj":
-                break;
             case "FBX (Binary)":
-                break;
             case "S&Box Vmdl (Obj)":
-                break;
             case "S&Box Vmdl (FBX Binary)":
                 break;
             default:

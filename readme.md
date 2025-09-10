@@ -23,3 +23,6 @@ what the catch is, and it's the fact that some stuff just blatantly does not wor
 It would not have been possible to create this quickly without the [RoomMesh file format information](https://github.com/Koanyaku/godot_rmesh_import/blob/main/docs/rmesh_format_scp-cb.md) 
 posted by [Koanyaku](https://github.com/koanyaku) in their 
 [Godot RMesh Import addon](https://github.com/Koanyaku/godot_rmesh_import/tree/main) repository.
+
+DirectX model (.x) conversion would not have been possible without [Paul 
+Bourke's webpage on Direct-X File Format](https://paulbourke.net/dataformats/directx/#xfilefrm_Template_MeshMaterialList) 

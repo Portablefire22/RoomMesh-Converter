@@ -7,6 +7,7 @@ public class VmatWriter : MaterialWriter
 {
     private string _currentName;
     private string _root = "models";
+    
     public VmatWriter(List<string> textureLocations, string originalDirectory, string path, string name) : base(textureLocations, originalDirectory, path, name)
     {
     }

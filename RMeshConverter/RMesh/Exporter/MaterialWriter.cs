@@ -6,9 +6,10 @@ namespace RMeshConverter.Exporter;
 
 public abstract class MaterialWriter
 {
-   protected readonly List<string> TextureLocations;
    protected FileStream OutputFileStream;
 
+   protected readonly List<string> TextureLocations;
+   
    protected readonly string OriginalDirectory;
    protected readonly string Path;
 
@@ -18,8 +19,8 @@ public abstract class MaterialWriter
 
    public MaterialWriter(List<string> textureLocations, string originalDirectory, string path, string name)
    {
-      Name = name;
       TextureLocations = textureLocations;
+      Name = name;
       OriginalDirectory = originalDirectory;
       Path = path;
    }
@@ -34,7 +35,6 @@ public abstract class MaterialWriter
    protected void CopyTexture(string name)
    {
       File.Copy($"{OriginalDirectory}{name}", $"{Path}\\{name}", true);
-      
       // Bump files dont seem to be mentioned but do exist
       try
       {

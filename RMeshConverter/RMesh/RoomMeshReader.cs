@@ -20,6 +20,8 @@ public class RoomMeshReader : MeshReader
     public List<Vertex[]> TextureVertices { get; set; }
     public List<string> TexturePaths { get; set; }
     public List<int[]> _vertexIndices;
+
+    public List<Entity.Entity> Entities;
     
     public RoomMeshReader(string path)
     {
@@ -29,6 +31,7 @@ public class RoomMeshReader : MeshReader
         TextureVertices = new List<Vertex[]>{};
         TexturePaths = new List<string>();
         _vertexIndices = new List<int[]>();
+        Entities = new List<Entity.Entity>();
     }
     
     ~RoomMeshReader()
@@ -205,7 +208,7 @@ public class RoomMeshReader : MeshReader
         for (int i = 0; i < entityCount; i++)
         {
             var type = ReadB3DString();
-            Entity.Entity e;
+            Entity.Entity e = new Entity.Entity(new Vector3());
             switch (type)
             {
                 case "screen":
@@ -239,6 +242,7 @@ public class RoomMeshReader : MeshReader
                 default:
                     throw new RoomMeshException("invalid entity type");
             }
+            Entities.Add(e);
         }
     }
 

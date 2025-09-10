@@ -2,9 +2,9 @@
 
 public class MeshFace
 {
-    public List<int> Indices;
+    public int[] Indices;
 
-    public MeshFace(List<int> indices)
+    public MeshFace(int[] indices)
     {
         Indices = indices;
     }

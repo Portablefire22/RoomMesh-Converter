@@ -9,9 +9,9 @@ namespace RMeshConverter.Exporter;
  * https://gist.github.com/iscle/0dbcee58be8582978d15ea3629ce3e8b
  */
 
-public class FbxExporter : Exporter
+public class FbxRoomMeshExporter : MeshExporter
 {
-    public FbxExporter(RoomMeshReader reader, string inputFilePath, string name, string outputDirectory) : base(reader, inputFilePath, name, outputDirectory)
+    public FbxRoomMeshExporter(RoomMeshReader reader, string inputFilePath, string name, string outputDirectory) : base(inputFilePath, name, outputDirectory)
     {
         OutputFileStream = File.Create($"{OutputDirectory}\\{Name}.fbx");
         using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
