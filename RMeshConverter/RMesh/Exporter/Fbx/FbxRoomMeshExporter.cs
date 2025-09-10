@@ -65,11 +65,6 @@ public class FbxRoomMeshExporter : MeshExporter
         throw new NotImplementedException();
     }
 
-    public override ValueTask DisposeAsync()
-    {
-        throw new NotImplementedException();
-    }
-
     public override void Convert()
     {
         WriteHeader();

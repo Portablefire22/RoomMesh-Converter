@@ -4,7 +4,7 @@ using RMeshConverter.RMesh;
 
 namespace RMeshConverter.Exporter;
 
-public abstract class MeshExporter : IDisposable, IAsyncDisposable
+public abstract class MeshExporter : IDisposable
 {
 
     protected readonly string Name;
@@ -31,7 +31,6 @@ public abstract class MeshExporter : IDisposable, IAsyncDisposable
     
 
     public abstract void Dispose();
-    public abstract ValueTask DisposeAsync();
     
     public abstract void Convert();
 

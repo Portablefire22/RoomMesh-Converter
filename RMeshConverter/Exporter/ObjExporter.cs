@@ -4,7 +4,7 @@ using System.Text;
 
 namespace RMeshConverter.Exporter;
 
-public class ObjExporter : MeshExporter
+public abstract class ObjExporter : MeshExporter
 {
     public ObjExporter(string inputFilePath, string name, string outputDirectory) : base( inputFilePath, name, outputDirectory)
     {
@@ -73,20 +73,5 @@ public class ObjExporter : MeshExporter
         WriteLine("# Lilith's RoomMesh Converter\n" +
                   "# https://github.com/Portablefire22/RoomMesh-Converter");
         WriteObjectName(Name);
-    }
-    
-    public override void Dispose()
-    {
-        throw new NotImplementedException();
-    }
-
-    public override ValueTask DisposeAsync()
-    {
-        throw new NotImplementedException();
-    }
-
-    public override void Convert()
-    {
-        throw new NotImplementedException();
     }
 }

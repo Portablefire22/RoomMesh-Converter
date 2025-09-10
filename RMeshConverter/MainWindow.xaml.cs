@@ -134,7 +134,7 @@ public partial class MainWindow : Window
                 var name = file.Split("\\").Last().Replace(".x", "");
                 using var conv = new XAsciiReader(file);
                 conv.Convert();
-                using var xpr = new XExporter(conv, file, name, $"{Config.OutputFolder}\\Models");
+                using var xpr = new XExporter(conv, file, name, $"{Config.ModelOutputFolder}\\Models");
                 xpr.Convert();
             }
             catch (Exception e)
@@ -159,15 +159,19 @@ public partial class MainWindow : Window
         switch (exporter)
         {
             case "WaveFront Obj":
+                Config.ModelOutputFolder = Config.OutputFolder;
                 exp = new ObjRoomMeshExporter(name, outputFolder, file, reader);
                 break;
             case "FBX (Binary)":
+                Config.ModelOutputFolder = Config.OutputFolder;
                 exp = new FbxRoomMeshExporter(reader, file, name, outputFolder);
                 break;
             case "S&Box Vmdl (Obj)":
+                Config.ModelOutputFolder = $"{Config.OutputFolder}/source/";
                 exp = new VmdlRoomMeshExporter(reader, file, name, outputFolder);
                 break;
             case "S&Box Vmdl (FBX Binary)":
+                Config.ModelOutputFolder = $"{Config.OutputFolder}/source/";
                 // exp = new VmdlExporter(reader, file, relativePath, outputFolder);
                 throw new NotImplementedException("S&Box FBX has not yet been implemented");
                 break;

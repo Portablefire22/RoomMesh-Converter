@@ -1,14 +1,16 @@
 ﻿using System.IO;
+using System.Numerics;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using RMeshConverter.Exporter.Obj;
 using RMeshConverter.RMesh;
+using RMeshConverter.RMesh.Entity;
 
 namespace RMeshConverter.Exporter.Valve;
 
 public class VmdlRoomMeshExporter : MeshExporter
 {
-    private new RoomMeshReader Reader;
+    private RoomMeshReader Reader;
     private MeshExporter _objRoomMeshExporter;
     private string _root = "models";
     public VmdlRoomMeshExporter(RoomMeshReader reader, string inputFilePath, string name, string outputDirectory) : base(inputFilePath, name, outputDirectory)
@@ -23,12 +25,9 @@ public class VmdlRoomMeshExporter : MeshExporter
 
     public override void Dispose()
     {
-        throw new NotImplementedException();
-    }
-
-    public override ValueTask DisposeAsync()
-    {
-        throw new NotImplementedException();
+        Reader.Dispose();
+        _objRoomMeshExporter.Dispose();
+        OutputFileStream.Dispose();
     }
 
     private void WriteRootNode()
@@ -79,33 +78,42 @@ public class VmdlRoomMeshExporter : MeshExporter
                                 "},\n"u8);    
     }
 
-    private void WriteRenderMesh()
+    private void WriteRenderMeshList()
     {
-        var str = "{\n" +
-                                "_class=\"RenderMeshList\"\n" +
-                                "children = [\n" +
-                                "{\n" +
-                                "_class=\"RenderMeshFile\"\n" +
-                                $"filename=\"{_root}/source/{Name}.obj\"\n" +
-                                "import_translation = [0.0, 0.0, 0.0]\n" +
-                                "import_rotation=[0.0,0.0,0.0]\n" +
-                                "import_scale=1.0\n" +
-                                "align_origin_x_type=\"None\"\n" +
-                                "align_origin_y_type=\"None\"\n" +
-                                "align_origin_z_type=\"None\"\n" +
-                                "parent_bone=\"\"\n" +
-                                "import_filter={\n" +
-                                "exclude_by_default = false\n" +
-                                "exception_list = []\n";
 
-        str += "}\n},\n";
+        var str = "{\n"u8 +
+                   "_class=\"RenderMeshList\"\n"u8 +
+                   "children = [\n"u8;
+        OutputFileStream.Write(str);
+    }
+    private void WriteRenderMesh(string fileName, Vector3 translation, Vector3 rotation, float scale)
+    {
+        var str = "{\n_class=\"RenderMeshFile\"\n" +
+                  $"filename=\"{_root}/source/{fileName}.obj\"\n" +
+                  $"import_translation = [{translation.X}, {translation.Y}, {translation.Z}]\n" +
+                  $"import_rotation=[{rotation.X},{rotation.Y},{rotation.Z}]\n" +
+                  $"import_scale={scale}\n" +
+                  "align_origin_x_type=\"None\"\n" +
+                  "align_origin_y_type=\"None\"\n" +
+                  "align_origin_z_type=\"None\"\n" +
+                  "parent_bone=\"\"\n" +
+                  "import_filter={\n" +
+                  "exclude_by_default = false\n" +
+                  "exception_list = []\n" +
+              "}\n" +
+          "},\n";
         OutputFileStream.Write(Encoding.UTF8.GetBytes(str));
     }
     
     private void WriteChildren()
     {
         WriteMaterialGroup();
-        WriteRenderMesh();
+        WriteRenderMeshList();
+        WriteRenderMesh(Name, new Vector3(0), new Vector3(0), 1);
+        foreach (var mesh in Reader.Entities.OfType<Model>().ToArray())
+        {
+           WriteRenderMesh($"models/{mesh.Name.Remove(mesh.Name.LastIndexOf('.'))}", mesh.Position, mesh.Rotation, mesh.Scale.X); 
+        }
     }
     
     public override void Convert()

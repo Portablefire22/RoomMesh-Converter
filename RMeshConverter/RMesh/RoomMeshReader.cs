@@ -208,41 +208,46 @@ public class RoomMeshReader : MeshReader
         for (int i = 0; i < entityCount; i++)
         {
             var type = ReadB3DString();
-            Entity.Entity e = new Entity.Entity(new Vector3());
             switch (type)
             {
                 case "screen":
-                    e = ReadScreen();
-                    Logger.LogInformation("Screen Position: {}", e.Position.ToString());
+                    var s = ReadScreen();
+                    Entities.Add(s);
+                    Logger.LogInformation("Screen Position: {}", s.Position.ToString());
                     break;
                 case "waypoint":
-                    e = ReadWaypoint();
-                    Logger.LogInformation("Waypoint Position: {}", e.Position.ToString());
+                    var w = ReadWaypoint();
+                    Entities.Add(w);
+                    Logger.LogInformation("Waypoint Position: {}", w.Position.ToString());
                     break;
                 case "light":
-                    e = ReadLight();
-                    Logger.LogInformation("Light Position: {}", e.Position.ToString());
+                    var l = ReadLight();
+                    Entities.Add(l);
+                    Logger.LogInformation("Light Position: {}", l.Position.ToString());
                     break;
                 case "spotlight":
-                    e = ReadSpotlight();
-                    Logger.LogInformation("Spotlight Position: {}", e.Position.ToString());
+                    var sl = ReadSpotlight();
+                    Entities.Add(sl);
+                    Logger.LogInformation("Spotlight Position: {}", sl.Position.ToString());
                     break;
                 case "soundemitter":
-                    e = ReadSoundEmitter();
-                    Logger.LogInformation("Sound Emitter Position: {}", e.Position.ToString());
+                    var se = ReadSoundEmitter();
+                    Entities.Add(se);
+                    Logger.LogInformation("Sound Emitter Position: {}", se.Position.ToString());
                     break;
                 case "playerstart":
-                    e = ReadPlayerStart();
-                    Logger.LogInformation("Player Start Position: {}", e.Position.ToString());
+                    var ps = ReadPlayerStart();
+                    Entities.Add(ps);
+                    Logger.LogInformation("Player Start Position: {}", ps.Position.ToString());
                     break;
                 case "model":
                     var m = ReadModel();
+                    Entities.Add(m);
                     Logger.LogInformation("Model Name: {}", m.Name);
                     break;
                 default:
                     throw new RoomMeshException("invalid entity type");
             }
-            Entities.Add(e);
         }
     }
 
