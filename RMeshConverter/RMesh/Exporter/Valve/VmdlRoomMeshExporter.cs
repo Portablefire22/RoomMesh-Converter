@@ -13,13 +13,15 @@ public class VmdlRoomMeshExporter : MeshExporter
     private RoomMeshReader Reader;
     private MeshExporter _objRoomMeshExporter;
     private string _root = "models";
-    public VmdlRoomMeshExporter(RoomMeshReader reader, string inputFilePath, string name, string outputDirectory) : base(inputFilePath, name, outputDirectory)
+    private bool _isChild;
+    public VmdlRoomMeshExporter(RoomMeshReader reader, string inputFilePath, string name, string outputDirectory, string root, bool isChild) : base(inputFilePath, name, outputDirectory)
     {
         using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
         Logger = factory.CreateLogger<VmdlRoomMeshExporter>();
         OutputFileStream = File.Create($"{OutputDirectory}\\{Name}.vmdl");
         Reader = reader;
-        
+        _root = root;
+        _isChild = isChild;
         _objRoomMeshExporter = new ObjRoomMeshExporter(name, $"{outputDirectory}\\source", inputFilePath, reader);
     }
 
@@ -88,6 +90,7 @@ public class VmdlRoomMeshExporter : MeshExporter
     }
     private void WriteRenderMesh(string fileName, Vector3 translation, Vector3 rotation, float scale)
     {
+        if (_isChild) fileName = $"source/{fileName}";
         var str = "{\n_class=\"RenderMeshFile\"\n" +
                   $"filename=\"{_root}/source/{fileName}.obj\"\n" +
                   $"import_translation = [{translation.X}, {translation.Y}, {translation.Z}]\n" +
@@ -127,7 +130,7 @@ public class VmdlRoomMeshExporter : MeshExporter
         WriteCloseRoot();
         OutputFileStream.Close();
 
-        var matExporter = new VmatWriter(Reader.TexturePaths, InputDirectory, $"{OutputDirectory}\\source", Name);
+        var matExporter = new VmatWriter(Reader.TexturePaths, InputDirectory, $"{OutputDirectory}", Name, _root, _isChild);
         matExporter.Convert();
     }
 }

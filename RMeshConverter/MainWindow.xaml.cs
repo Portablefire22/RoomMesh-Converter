@@ -168,12 +168,16 @@ public partial class MainWindow : Window
                 break;
             case "S&Box Vmdl (Obj)":
                 Config.ModelOutputFolder = $"{Config.OutputFolder}/source/";
-                exp = new VmdlRoomMeshExporter(reader, file, name, outputFolder);
+                exp = new VmdlRoomMeshExporter(reader, file, name, outputFolder, "models", false);
                 break;
             case "S&Box Vmdl (FBX Binary)":
                 Config.ModelOutputFolder = $"{Config.OutputFolder}/source/";
                 // exp = new VmdlExporter(reader, file, relativePath, outputFolder);
                 throw new NotImplementedException("S&Box FBX has not yet been implemented");
+                break;
+            case "S&Box Prefab (Obj)":
+                Config.ModelOutputFolder = $"{Config.OutputFolder}/source/";
+                exp = new PrefabWriter(reader, file, name, outputFolder, "prefabs/Map");
                 break;
             default:
                 throw new ArgumentException($"exporter by name '{exporter}' does not exist");
@@ -193,6 +197,7 @@ public partial class MainWindow : Window
             case "FBX (Binary)":
             case "S&Box Vmdl (Obj)":
             case "S&Box Vmdl (FBX Binary)":
+            case "S&Box Prefab (Obj)":
                 break;
             default:
                 _isFormatSelected = false;

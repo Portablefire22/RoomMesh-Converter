@@ -43,7 +43,6 @@ public abstract class MaterialWriter
       }
       catch (Exception e)
       {
-         Logger.LogCritical("{}", e);
       }
 }
 

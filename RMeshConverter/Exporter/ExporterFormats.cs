@@ -9,5 +9,6 @@ public class ExporterFormats : ObservableCollection<string>
     {
         Add("WaveFront Obj");
         Add("S&Box Vmdl (Obj)");
+        Add("S&Box Prefab (Obj)");
     }
 }
