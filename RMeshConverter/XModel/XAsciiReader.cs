@@ -12,9 +12,13 @@ public class XAsciiReader : MeshReader
 {
 
    public List<Material> Materials;
-   public List<Template> Templates;
+   public Dictionary<string, Template> Templates;
    public List<Frame> Frames;
 
+   public List<Mesh> Meshes;
+   
+   public int unknown;
+   
    public string Path;
    public XAsciiReader(string path)
    {
@@ -24,13 +28,15 @@ public class XAsciiReader : MeshReader
       Path = path;
 
       Materials = new List<Material>();
-      Templates = new List<Template>();
+      Templates = new Dictionary<string, Template>();
+      Meshes = new List<Mesh>();
+      Templates.Add("AnimationSet", new Template("", new Dictionary<string, dynamic>()));
       Frames = new List<Frame>();
    }
 
    public string ReadLine()
    {
-      var bf = new byte[128];
+      var bf = new byte[256];
       var i = 0;
       var isComment = false;
       while (true)
@@ -38,12 +44,14 @@ public class XAsciiReader : MeshReader
          var x = InputFileStream.ReadByte();
          if (x == -1) throw new EndOfStreamException();
          bf[i] = (byte) x;
-         if ((i == 0 || i == 1) && bf[i] == '/' || bf[0] == '#') isComment = true;
          if (bf[i++] == '\n') {break;}
       }
       // Get the next line if it was a comment
+      var str = Encoding.UTF8.GetString(bf[new Range(0, i)]).Trim().TrimEnd('\r', '\n');
+      if (str.Length == 0) return ReadLine();
+      if (str[0] == '/' || str[0] == '#' || (str[0] == '{' && str.Length == 1)) isComment = true;
       if (isComment) return ReadLine();
-      return Encoding.UTF8.GetString(bf[new Range(0, i)]).Trim();
+      return str;
    }
 
    public string ReadValue()
@@ -95,33 +103,52 @@ public class XAsciiReader : MeshReader
    public Material ReadMaterial(string name)
    {
       Logger.LogInformation("Reading Material: {}", name);
-      ReadLine(); // Open Bracket
       var faceColor = ReadRgba();
       var power = float.Parse(ReadValue());
       var specularColor = ReadRgb();
       var emissiveColor = ReadRgb();
       string? textureFileName = null;
-      if (ReadLine() == "TextureFilename")
+
+      var str = ReadLine();
+      str = str.Replace("{", "").Trim();
+      if (str == "TextureFilename")
       {
-         ReadLine();
          var x = ReadValue();
          textureFileName = x.Replace("\"", "");
-         ReadLine();
+         ReadClosing();
+         ReadClosing();
       } 
-      ReadClosing();
       return new Material(name, faceColor, power, specularColor, emissiveColor, textureFileName);
    }
 
+   public string[] ReadUntil(char chr)
+   {
+      var strings = new List<string>();
+      while (true)
+      {
+         var str = ReadLine();
+         strings.Add(str);
+         if (str.EndsWith(chr)) break;
+      }
+
+      return strings.ToArray();
+   }
+   
    public Matrix4x4 ReadTransformMatrix()
    {
       // Why is there no matrix4x4 parse :)
       var mat = new Matrix4x4();
-      for (int y = 0; y < 4; y++)
+      var lines = ReadUntil(';');
+      var y = 0;
+      for (int i = 0; i < lines.Length; i++)
       {
-         var line = ReadLine().Split(",");
-         for (int x = 0; x < 4; x++)
+         var line = lines[i].Split(",");
+
+         for (int x = 0; x < line.Length; x++)
          {
-            mat[x, y] = float.Parse(line[x].Replace(";", ""));
+            if (line[x] == "") break;
+            mat[x % 4, y] = float.Parse(line[x].Replace(";", ""));
+            if (x % 4 == 0 && x != 0) y++;
          }
       }
       ReadClosing();
@@ -138,7 +165,16 @@ public class XAsciiReader : MeshReader
    public Vector2 ReadVector2()
    {
       var x = ReadLine();
-      var end = x.Replace(";", "").Split(",");
+      var end = x.Split(",");
+      // The way vec2s are represented changes between files?
+      if (end.Length == 3 || (end.Length > 1 && end[1].Contains(";;")))
+      {
+         end = x.Replace(";", "").Split(",");
+      }
+      else
+      {
+         end = x.Replace(",", "").Split(";");
+      } 
       return new Vector2(float.Parse(end[0]), float.Parse(end[1]));
    }
 
@@ -207,7 +243,15 @@ public class XAsciiReader : MeshReader
       for (int i = 0; i < materialCount; i++)
       {
          var str = ReadLine();
-         materials.Add(str.Remove(str.Length-1).Remove(0, 1));
+         if (str[0] == '{')
+         {
+            materials.Add(str.Remove(str.Length-1).Remove(0, 1));
+            continue;
+         }
+
+         var tmo = str.Split(" ");
+         Materials.Add(ReadMaterial(tmo[1]));
+         materials.Add(tmo[1]);
       }
       var materialsSame = materials.All(x => x == materials[0]);
       ReadClosing();
@@ -229,17 +273,34 @@ public class XAsciiReader : MeshReader
       {
           faces.Add(ReadMeshFace());
       }
-      ReadLine(); // "MeshTextureCoords"
-      ReadLine(); // "{"
-      
-      var tex = ReadMeshTextureCoords();
-      ReadLine(); // "MeshNormals"
-      ReadLine(); // "{"
-      var norms = ReadMeshNormals();
-      ReadLine();
-      ReadLine();
-      var mats = ReadMeshMaterialList();
-      ReadClosing();
+      var str = ReadLine().Replace("{", "").Trim();
+      List<Vector2> tex = new List<Vector2>();
+      MeshNormals norms = null;
+      MeshMaterialList mats = null;
+      while (str != "}")
+      {
+         switch (str)
+         {
+            case "MeshNormals":
+               norms = ReadMeshNormals();
+               break;
+            case "MeshTextureCoords":
+               tex = ReadMeshTextureCoords();
+               break;
+            case "MeshMaterialList":
+               mats = ReadMeshMaterialList();
+               break;
+            default:
+               if (Templates.ContainsKey(str))
+               {
+                  while (ReadLine() != "}") ;
+               }
+               break;
+         }
+
+         str = ReadLine();
+         str = str.Replace("{", "").Trim(); 
+      }
       return new Mesh(name, verts, faces, tex, norms, mats);
    }
 
@@ -247,7 +308,6 @@ public class XAsciiReader : MeshReader
    {
       Logger.LogInformation("Reading Frame: {}", name);
       var frame = new Frame(name);
-      ReadLine();
       var read = true;
       while (read)
       {
@@ -257,16 +317,19 @@ public class XAsciiReader : MeshReader
          switch (templateName[0])
          {
             case "FrameTransformMatrix":
-               ReadLine();
                frame.TransformMatrix = ReadTransformMatrix();
                break;
             case "Mesh":
-               ReadLine();
                frame.Meshes.Add(ReadMesh(templateName[1]));
                break;
-            
             case "}":
                read = false;
+               break;
+            default:
+               if (Templates.ContainsKey(templateName[0]))
+               {
+                  while (ReadLine() != "}") ;
+               }
                break;
          }
       }
@@ -276,7 +339,7 @@ public class XAsciiReader : MeshReader
    public Template ReadTemplate(string name)
    {
       Logger.LogInformation("Reading Template: {}", name);
-      ReadClosing();
+      while (ReadLine() != "}") ;
       return new Template("", new Dictionary<string, dynamic>());
    }
    
@@ -307,11 +370,32 @@ public class XAsciiReader : MeshReader
                case "Frame":
                   Frames.Add(ReadFrame(templateName[1]));
                   break;
+               case "Mesh": 
+                  Meshes.Add(ReadMesh(templateName[1]));
+                  break;
                case "template":
-                  Templates.Add(ReadTemplate(templateName[1]));
+                  if (Path.Contains("513"))
+                  {
+                     var xsad = 1;
+                  }
+                  Templates.Add(templateName[1], ReadTemplate(templateName[1]));
                   break;
                default:
-                  Logger.LogCritical("Unknown Template '{}'", templateName[0]);
+                  if (Templates.ContainsKey(templateName[0]))
+                  {
+                     while (ReadLine() != "}") ;
+                  }
+                  else
+                  {
+                     Logger.LogCritical("Unknown Template '{}'", templateName[0]);
+                     unknown++;
+                     if (unknown > 10)
+                     {
+                        Logger.LogCritical("Uknown limit reached");
+                        InputFileStream.Close();
+                        return;
+                     }
+                  }
                   break;
             }
          }
@@ -322,6 +406,7 @@ public class XAsciiReader : MeshReader
       catch (Exception e)
       {
          Logger.LogCritical("{}", e);
+         Logger.LogCritical("{}", Path);
       } // We know when we done when we EOF :)
 
       Logger.LogInformation("Finished Reading X Model: {}", Path);

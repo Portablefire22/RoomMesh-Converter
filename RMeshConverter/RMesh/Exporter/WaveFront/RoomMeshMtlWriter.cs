@@ -19,7 +19,15 @@ public class RoomMeshMtlWriter : MtlWriter
         WriteHeader();
         foreach (var path in TextureLocations)
         {
-            CopyTexture(path);
+            try
+            {
+                CopyTexture(path);
+            }
+            catch (IOException e)
+            {
+                // Some rooms are completely unfinished and dont have textures;
+                Logger.LogCritical("{}", e);
+            }
             WriteTexture(path);
         }
         OutputFileStream.Close();

@@ -127,20 +127,19 @@ public partial class MainWindow : Window
             }
         });
 
-        Parallel.ForEach(Config.ModelFiles, file =>
-        {
-            try
-            {
-                var name = file.Split("\\").Last().Replace(".x", "");
-                using var conv = new XAsciiReader(file);
-                conv.Convert();
-                using var xpr = new XExporter(conv, file, name, $"{Config.ModelOutputFolder}\\Models");
-                xpr.Convert();
-            }
-            catch (Exception e)
-            {
-                _logger.LogCritical("{}", e); 
-            }
+        Parallel.ForEach(Config.ModelFiles, file => {
+                try
+                {
+                    var name = file.Split("\\").Last().Replace(".x", "");
+                    using var conv = new XAsciiReader(file);
+                    conv.Convert();
+                    using var xpr = new XExporter(conv, file, name, $"{Config.ModelOutputFolder}\\Models");
+                    xpr.Convert();
+                }
+                catch (Exception e)
+                {
+                    _logger.LogCritical("{}", e);
+                }
         });
         
         GC.Collect();

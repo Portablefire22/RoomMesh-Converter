@@ -3,7 +3,7 @@ using System.Text;
 
 namespace RMeshConverter.Exporter.Valve;
 
-public class VmatWriter : MaterialWriter
+public class VmatWriter : MaterialWriter, IDisposable
 {
     private string _currentName;
     private string _root = "models";
@@ -56,26 +56,34 @@ public class VmatWriter : MaterialWriter
     {
         foreach (var textureName in TextureLocations)
         {
-            _currentName = RemoveExtension(textureName);
-            OutputFileStream = File.Create($"{Path}\\{_currentName}.vmat");
-
-            OutputFileStream.Write("// Lilith's RoomMesh Converter\n"u8 +
-                                   "// https://github.com/Portablefire22/RoomMesh-Converter\n"u8);
-            WriteOpenLayer(0);
-            WriteShader("shaders/complex.shader");
-
-            if (textureName == "glass.png")
+            try
             {
-                WriteTranslucent(textureName);
-            }
-            
-            WriteColor(textureName);
-            TryWriteBump(textureName);
-            
-            
-            OutputFileStream.Write("}"u8);
-            
-            OutputFileStream.Close();
+                _currentName = RemoveExtension(textureName);
+                OutputFileStream = File.Create($"{Path}\\{_currentName}.vmat");
+
+                OutputFileStream.Write("// Lilith's RoomMesh Converter\n"u8 +
+                                       "// https://github.com/Portablefire22/RoomMesh-Converter\n"u8);
+                WriteOpenLayer(0);
+                WriteShader("shaders/complex.shader");
+
+                if (textureName == "glass.png")
+                {
+                    WriteTranslucent(textureName);
+                }
+
+                WriteColor(textureName);
+                TryWriteBump(textureName);
+
+
+                OutputFileStream.Write("}"u8);
+
+                OutputFileStream.Close();
+            } catch (IOException e) {}
         }
+    }
+
+    public void Dispose()
+    {
+        OutputFileStream.Dispose();
     }
 }

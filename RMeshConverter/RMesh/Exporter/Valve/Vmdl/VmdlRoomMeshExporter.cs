@@ -54,7 +54,11 @@ public class VmdlRoomMeshExporter : MeshExporter
     {
         foreach (var texture in Reader.TexturePaths)
         {
-            var textureName = texture.Remove(texture.LastIndexOf('.'));
+            string textureName = texture;
+            if (textureName.Contains("."))
+            {
+                textureName = texture.Remove(texture.LastIndexOf('.'));
+            }
             var str = $"{{\nfrom=\"{textureName}.vmat\"\n" +
                       $"to=\"{_root}/source/{textureName}.vmat\"\n" +
                       $"}},\n";
@@ -91,9 +95,13 @@ public class VmdlRoomMeshExporter : MeshExporter
     private void WriteRenderMesh(string fileName, Vector3 translation, Vector3 rotation, float scale)
     {
         if (_isChild) fileName = $"source/{fileName}";
+        if (translation.Z != 0) translation.Z /= scale;
+        if (translation.X != 0) translation.X /= scale;
+        if (translation.Y != 0) translation.Y /= scale;
+        rotation.Y -= 90;
         var str = "{\n_class=\"RenderMeshFile\"\n" +
                   $"filename=\"{_root}/source/{fileName}.obj\"\n" +
-                  $"import_translation = [{translation.X}, {translation.Y}, {translation.Z}]\n" +
+                  $"import_translation = [{translation.X}, {translation.Z}, {translation.Y}]\n" +
                   $"import_rotation=[{rotation.X},{rotation.Y},{rotation.Z}]\n" +
                   $"import_scale={scale}\n" +
                   "align_origin_x_type=\"None\"\n" +
@@ -103,8 +111,8 @@ public class VmdlRoomMeshExporter : MeshExporter
                   "import_filter={\n" +
                   "exclude_by_default = false\n" +
                   "exception_list = []\n" +
-              "}\n" +
-          "},\n";
+                  "}\n" +
+                  "},\n";
         OutputFileStream.Write(Encoding.UTF8.GetBytes(str));
     }
     
@@ -130,7 +138,7 @@ public class VmdlRoomMeshExporter : MeshExporter
         WriteCloseRoot();
         OutputFileStream.Close();
 
-        var matExporter = new VmatWriter(Reader.TexturePaths, InputDirectory, $"{OutputDirectory}", Name, _root, _isChild);
+        using var matExporter = new VmatWriter(Reader.TexturePaths, InputDirectory, $"{OutputDirectory}", Name, _root, _isChild);
         matExporter.Convert();
     }
 }

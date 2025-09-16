@@ -18,7 +18,7 @@ public class XExporter : ObjExporter
     
     public void WriteFace(MeshFace face)
     {
-        WriteIndex(face.Indices);
+        WriteIndex(face.Indices.Reverse().ToArray());
     }
 
     private void WriteFaceMaterial(string material)
@@ -73,6 +73,11 @@ public class XExporter : ObjExporter
         foreach (var frame in Reader.Frames)
         {
             WriteFrame(frame);
+        }
+
+        if (Name == "keycard" || Name == "keycard.x")
+        {
+            var x = 0;
         }
         OutputFileStream.Close();
     }

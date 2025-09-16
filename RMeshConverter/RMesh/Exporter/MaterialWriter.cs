@@ -27,6 +27,7 @@ public abstract class MaterialWriter
 
    protected string GetBumpName(string nameAndExtension)
    {
+      if (!nameAndExtension.Contains('.')) return $"{nameAndExtension}bump"; 
       var extension = nameAndExtension[new Range(nameAndExtension.LastIndexOf('.'), ^0)];
       var name = RemoveExtension(nameAndExtension);
       return $"{name}bump{extension}";
@@ -48,7 +49,7 @@ public abstract class MaterialWriter
 
    protected static string RemoveExtension(string file)
    {
-      return file.Remove(file.LastIndexOf('.'));
+      return !file.Contains('.') ? file : file.Remove(file.LastIndexOf('.'));
    }
 
    protected void WriteString(string str)

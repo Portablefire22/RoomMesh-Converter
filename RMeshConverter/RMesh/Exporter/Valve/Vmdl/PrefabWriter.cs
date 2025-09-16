@@ -33,6 +33,7 @@ public class PrefabWriter : MeshExporter
         Logger = factory.CreateLogger<VmdlRoomMeshExporter>();
         _reader = reader;
         _root = root;
+        OutputFileStream = File.Create($"{OutputDirectory}\\{Name}.prefab");
         
         _roomMeshExporter = new VmdlRoomMeshExporter(reader, inputFilePath, name,  $"{outputDirectory}\\source", root, true);
     }
@@ -143,15 +144,21 @@ public class PrefabWriter : MeshExporter
     public Vector4 Vector4FromAngles(string angles)
     {
         var temp = angles.Split(" ");
-        return new Vector4(float.Parse(temp[0]), float.Parse(temp[1]), float.Parse(temp[2]), 1);
+        return new Vector4(float.Parse(temp[0]), float.Parse(temp[1]) - 90f, float.Parse(temp[2]), 1);
     }
     
     
     public override void Convert()
     {
-        _roomMeshExporter.Convert();
+        try
+        {
+            _roomMeshExporter.Convert();
+        }
+        catch (Exception e)
+        {
+            Logger.LogCritical("{}", e);
+        }
         // Exporting isn't perfect so we wait until conversion to create the file
-        OutputFileStream = File.Create($"{OutputDirectory}\\{Name}.prefab");
         var children = new List<GameObject>();
         foreach (var entity in _reader.Entities)
         {

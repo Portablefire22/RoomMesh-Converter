@@ -157,20 +157,23 @@ public class RoomMeshReader : MeshReader
     public void GetInvisCollisions()
     {
         var invisCollisions = ReadInt32();
-        Logger.LogInformation("Invisible Collisions: {}", invisCollisions);
-        if (invisCollisions == 0) return;
-        var invisCollisionsVertices = ReadInt32();
-        Logger.LogInformation("Invisible Collisions Vertices: {}", invisCollisionsVertices);
-        for (int i = 0; i < invisCollisionsVertices; i++)
+        for (int i = 0; i < invisCollisions; i++)
         {
-            var vert = new InvisibleCollisionVertex(ReadVector3());
-        }
-        
-        var invisCollisionsTriangles = ReadInt32();
-        Logger.LogInformation("Invisible Collisions Triangles: {}", invisCollisionsTriangles);
-        for (int i = 0; i < invisCollisionsTriangles * 3; i++)
-        {
-            ReadInt32(); // index
+            Logger.LogInformation("Invisible Collisions: {}", invisCollisions);
+            if (invisCollisions == 0) return;
+            var invisCollisionsVertices = ReadInt32();
+            Logger.LogInformation("Invisible Collisions Vertices: {}", invisCollisionsVertices);
+            for (int j = 0; j < invisCollisionsVertices; j++)
+            {
+                var vert = new InvisibleCollisionVertex(ReadVector3());
+            }
+
+            var invisCollisionsTriangles = ReadInt32();
+            Logger.LogInformation("Invisible Collisions Triangles: {}", invisCollisionsTriangles);
+            for (int j = 0; j < invisCollisionsTriangles * 3; j++)
+            {
+                ReadInt32(); // index
+            }
         }
     }
 
@@ -207,6 +210,7 @@ public class RoomMeshReader : MeshReader
         Logger.LogInformation("Entity Count: {}", entityCount);
         for (int i = 0; i < entityCount; i++)
         {
+            Logger.LogInformation($"{i}");
             var type = ReadB3DString();
             switch (type)
             {
