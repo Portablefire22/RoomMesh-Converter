@@ -177,8 +177,10 @@ public class PrefabWriter : MeshExporter
             children.Add(obj);
         }
 
-        var modelRenderer = new ModelRendererComponent(18446744073709551615, false, null, null, null, null, $"prefabs\\Map\\source\\{Name}.vmdl", "On", new Vector4(1));
-        var rootObject = new GameObject(Name, new Vector3(0), new Vector4(0,0,0,1), "", new []{modelRenderer}, children.ToArray());
+        var modelLocation = $"prefabs\\Map\\source\\{Name}.vmdl";
+        var modelRenderer = new ModelRendererComponent(18446744073709551615, false, null, null, null, null, modelLocation, "On", new Vector4(1));
+        var collider = new ModelColliderComponent(modelLocation);
+        var rootObject = new GameObject(Name, new Vector3(0), new Vector4(0,0,0,1), "", new Component[]{modelRenderer, collider}, children.ToArray());
         var root = new Root(rootObject);
 
         var options = new JsonSerializerOptions();

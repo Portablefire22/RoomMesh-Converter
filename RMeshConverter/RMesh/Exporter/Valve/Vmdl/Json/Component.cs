@@ -6,6 +6,7 @@ namespace RMeshConverter.Exporter.Valve.Json;
 [JsonDerivedType(typeof(LightComponent))]
 [JsonDerivedType(typeof(SpotlightComponent))]
 [JsonDerivedType(typeof(ModelRendererComponent))]
+[JsonDerivedType(typeof(ModelColliderComponent))]
 public class Component
 {
     public string __type{get;set;}

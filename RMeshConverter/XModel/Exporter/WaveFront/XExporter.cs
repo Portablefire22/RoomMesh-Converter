@@ -40,7 +40,7 @@ public class XExporter : ObjExporter
         var i = 0;
         foreach (var face in mesh.Faces)
         {
-            if (!mesh.MaterialList.AllMaterialsSame || i == 0)
+            if (i == 0)
             {
                 WriteFaceMaterial(mesh.MaterialList.MaterialName[i]);
             }
@@ -68,11 +68,18 @@ public class XExporter : ObjExporter
     {
         WriteHeader();
         WriteMtlLib();
-        using var mtlWriter = new XMtlWriter(Reader.Materials, OutputDirectory, Name, InputDirectory);
-        mtlWriter.Convert();
-        foreach (var frame in Reader.Frames)
+        try
         {
-            WriteFrame(frame);
+            using var mtlWriter = new XMtlWriter(Reader.Materials, OutputDirectory, Name, InputDirectory);
+            mtlWriter.Convert();
+            foreach (var frame in Reader.Frames)
+            {
+                WriteFrame(frame);
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.LogCritical(e.ToString());
         }
 
         if (Name == "keycard" || Name == "keycard.x")

@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.IO.Enumeration;
 using System.Numerics;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -47,7 +48,7 @@ public class VmdlRoomMeshExporter : MeshExporter
 
     private void WriteCloseRoot()
     {
-        OutputFileStream.Write("]\n},\n]\n}\n}"u8.ToArray());
+        OutputFileStream.Write("]\n}\n}"u8.ToArray());
     }
 
     private void WriteMaterialRemaps()
@@ -115,16 +116,56 @@ public class VmdlRoomMeshExporter : MeshExporter
                   "},\n";
         OutputFileStream.Write(Encoding.UTF8.GetBytes(str));
     }
+
+    private void WriteCloseRenderMeshList()
+    {
+        OutputFileStream.Write("]},"u8);
+    }
+
+    private void WriteHull(string fileName)
+    {
+        var name = fileName;
+        if (_isChild) fileName = $"source/{fileName}";
+
+        var str = "{_class = \"PhysicsShapeList\"\n" +
+            "children = [{\n" +
+            "_class = \"PhysicsMeshFile\"\n" +
+            $"name = \"{name}\"\n" +
+            "parent_bone = \"\"\n" +
+            "surface_prop = \"default\"\n" +
+            "collision_tags = \"solid\"\n" +
+            "recenter_on_parent_bone = false\n" +
+            "offset_origin = [ 0.0, 0.0, 0.0 ]\n" +
+            "offset_angles = [ 0.0, -90.0, 0.0 ]\n" +
+            "align_origin_x_type = \"None\"\n" +
+            "align_origin_y_type = \"None\"\n" +
+            "align_origin_z_type = \"None\"\n" +
+            $"filename = \"{_root}/source/{fileName}.obj\"\n" +
+            "import_scale = 1.0\n" +
+            "faceMergeAngle = 10.0\n" +
+            "maxHullVertices = 0\n" +
+            "import_mode = \"HullPerElement\"\n" +
+            "optimization_algorithm = \"QEM\"\n" +
+            "import_filter = {\n" +
+            "exclude_by_default = false\n" +
+            "exception_list =\n" +
+            "[]}},]},";
+        OutputFileStream.Write(Encoding.UTF8.GetBytes(str));
+    }
+
+    private string[] Broken = new[] { "elecbox.x", "boxfile_a.x", "boxfile_b.x", "cabinet_a.x", "cabinet_b.x"};
     
     private void WriteChildren()
     {
         WriteMaterialGroup();
         WriteRenderMeshList();
         WriteRenderMesh(Name, new Vector3(0), new Vector3(0), 1);
-        foreach (var mesh in Reader.Entities.OfType<Model>().ToArray())
+        foreach (var mesh in Reader.Entities.OfType<Model>().Where(x => !Broken.Contains(x.Name.ToLower())).ToArray())
         {
            WriteRenderMesh($"models/{mesh.Name.Remove(mesh.Name.LastIndexOf('.'))}", mesh.Position, mesh.Rotation, mesh.Scale.X); 
         }
+        WriteCloseRenderMeshList();
+        WriteHull(Name);
     }
     
     public override void Convert()

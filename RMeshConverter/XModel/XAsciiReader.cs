@@ -274,10 +274,10 @@ public class XAsciiReader : MeshReader
           faces.Add(ReadMeshFace());
       }
       var str = ReadLine().Replace("{", "").Trim();
-      List<Vector2> tex = new List<Vector2>();
-      MeshNormals norms = null;
-      MeshMaterialList mats = null;
-      while (str != "}")
+      List<Vector2>? tex = new List<Vector2>();
+      MeshNormals? norms = null;
+      MeshMaterialList? mats = null;
+      while (str != "}" && (norms == null || mats == null || tex != null))
       {
          switch (str)
          {
@@ -297,6 +297,10 @@ public class XAsciiReader : MeshReader
                }
                break;
          }
+         
+         if (norms != null && mats != null && tex != null)
+         {
+            ReadLine();break;}
 
          str = ReadLine();
          str = str.Replace("{", "").Trim(); 
@@ -307,32 +311,74 @@ public class XAsciiReader : MeshReader
    public Frame ReadFrame(string name)
    {
       Logger.LogInformation("Reading Frame: {}", name);
+      Templates.TryAdd("AnimTicksPerSecond", new Template("", new Dictionary<string, dynamic>()));
+      Templates.TryAdd("VertexDuplicationIndices", new Template("", new Dictionary<string, dynamic>()));
       var frame = new Frame(name);
       var read = true;
-      while (read)
+      try
       {
-         var x = ReadLine();
-
-         var templateName = x.Split(" ");
-         switch (templateName[0])
+         while (read)
          {
-            case "FrameTransformMatrix":
-               frame.TransformMatrix = ReadTransformMatrix();
-               break;
-            case "Mesh":
-               frame.Meshes.Add(ReadMesh(templateName[1]));
-               break;
-            case "}":
-               read = false;
-               break;
-            default:
-               if (Templates.ContainsKey(templateName[0]))
-               {
+            var x = ReadLine();
+
+            var templateName = x.Split(" ");
+            switch (templateName[0])
+            {
+               case "FrameTransformMatrix":
+                  frame.TransformMatrix = ReadTransformMatrix();
+                  break;
+               case "}":
+                  read = false;
+                  break;
+               case "Header": // No fucking clue what this does
                   while (ReadLine() != "}") ;
-               }
-               break;
+                  break;
+               case "Material":
+                  Materials.Add(ReadMaterial(templateName[1]));
+                  break;
+               case "Frame":
+                  frame.Children.Add(ReadFrame(templateName[1]));
+                  break;
+               case "Mesh":
+                  frame.Meshes.Add(ReadMesh(templateName[1]));
+                  break;
+               case "template":
+                  Templates.TryAdd(templateName[1], ReadTemplate(templateName[1]));
+                  while (ReadLine().Trim() != "}") ;
+                  break;
+               default:
+                  if (Templates.ContainsKey(templateName[0]))
+                  {
+                     Logger.LogInformation(templateName[0]);
+                     while (true)
+                     {
+                        var xdas = ReadLine().Trim();
+                        Logger.LogInformation(xdas);
+                        if (xdas == "}") break;
+                     };
+                     Logger.LogInformation("broke");
+                  }
+                  else
+                  {
+                     Logger.LogCritical("Unknown Template '{}'", templateName[0]);
+                     unknown++;
+                     if (unknown > 10)
+                     {
+                        Logger.LogCritical("Uknown limit reached");
+                        InputFileStream.Close();
+                        return frame;
+                     }
+                  }
+
+                  break;
+            }
          }
       }
+      catch (Exception e)
+      {
+         Logger.LogCritical(e.ToString());
+      }
+
       return frame;
    }
 
@@ -353,62 +399,14 @@ public class XAsciiReader : MeshReader
 
       try
       {
-         while (true)
-         {
-            var x = ReadLine();
+         Frames.Add(ReadFrame("root"));
+      }
 
-            // Templates are {TYPE} {NAME}
-            var templateName = x.Split(" ");
-            switch (templateName[0])
-            {
-               case "Header": // No fucking clue what this does
-                  while (ReadLine() != "}") ;
-                  break;
-               case "Material":
-                  Materials.Add(ReadMaterial(templateName[1]));
-                  break;
-               case "Frame":
-                  Frames.Add(ReadFrame(templateName[1]));
-                  break;
-               case "Mesh": 
-                  Meshes.Add(ReadMesh(templateName[1]));
-                  break;
-               case "template":
-                  if (Path.Contains("513"))
-                  {
-                     var xsad = 1;
-                  }
-                  Templates.Add(templateName[1], ReadTemplate(templateName[1]));
-                  break;
-               default:
-                  if (Templates.ContainsKey(templateName[0]))
-                  {
-                     while (ReadLine() != "}") ;
-                  }
-                  else
-                  {
-                     Logger.LogCritical("Unknown Template '{}'", templateName[0]);
-                     unknown++;
-                     if (unknown > 10)
-                     {
-                        Logger.LogCritical("Uknown limit reached");
-                        InputFileStream.Close();
-                        return;
-                     }
-                  }
-                  break;
-            }
-         }
-      }
-      catch (EndOfStreamException e)
-      {
-      }
       catch (Exception e)
       {
          Logger.LogCritical("{}", e);
          Logger.LogCritical("{}", Path);
       } // We know when we done when we EOF :)
-
       Logger.LogInformation("Finished Reading X Model: {}", Path);
       InputFileStream.Close();
    }

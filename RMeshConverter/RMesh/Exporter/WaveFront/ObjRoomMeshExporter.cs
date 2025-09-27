@@ -10,7 +10,7 @@ namespace RMeshConverter.Exporter.Obj;
 
 public class ObjRoomMeshExporter : ObjExporter
 {
-    private RoomMeshReader Reader;
+    protected RoomMeshReader Reader;
     public ObjRoomMeshExporter(string name, string outputDirectory, string filePath, RoomMeshReader reader) : base(filePath, name, outputDirectory)
     {
         using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
@@ -18,7 +18,7 @@ public class ObjRoomMeshExporter : ObjExporter
         Reader = reader;
     }
     
-    private int WriteGeometricVertices()
+    protected int WriteGeometricVertices()
     {
         int i = 0;
         var dict = Reader.TextureVertices;
@@ -30,18 +30,27 @@ public class ObjRoomMeshExporter : ObjExporter
                 i++;
             }
         } 
+
+        return i;
+    }
+
+    protected int WriteUvs()
+    {
+        int i = 0;
+        var dict = Reader.TextureVertices;
         foreach (var texture in dict)
         {
             foreach (var vertex in texture)
             {
                 WriteVertexUv(vertex.Uv);
+                i++;
             }
         }
 
         return i;
     }
     
-    private int WriteVertexIndices()
+    protected int WriteVertexIndices()
     {
         int i = 0;
         var l = 0;
@@ -62,16 +71,25 @@ public class ObjRoomMeshExporter : ObjExporter
         }
         return i;
     }
-    
+
     public override void Convert()
+    {
+        Convert(true);
+    }
+
+    private void Convert(bool writeMaterial)
     {
         WriteHeader();
         WriteMtlLib();
         Logger.LogInformation("Wrote Geometric Vertices: {}", WriteGeometricVertices());
+        if (writeMaterial) Logger.LogInformation("Wrote UV positions: {}", WriteUvs());
         Logger.LogInformation("Wrote Indices: {}", WriteVertexIndices());
 
-        var mtl = new RoomMeshMtlWriter($"{OutputDirectory}", Name,  InputDirectory, Reader.TexturePaths);
-        mtl.Convert();
+        if (writeMaterial)
+        {
+            var mtl = new RoomMeshMtlWriter($"{OutputDirectory}", Name,  InputDirectory, Reader.TexturePaths);
+            mtl.Convert();
+        }
         
         OutputFileStream.Close();
     }

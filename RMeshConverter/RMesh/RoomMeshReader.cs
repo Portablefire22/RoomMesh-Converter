@@ -1,7 +1,9 @@
 ﻿using System.IO;
 using System.Numerics;
+using System.Printing;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic.CompilerServices;
 using RMeshConverter.RMesh.Entity;
 
 namespace RMeshConverter.RMesh;
@@ -21,6 +23,9 @@ public class RoomMeshReader : MeshReader
     public List<string> TexturePaths { get; set; }
     public List<int[]> _vertexIndices;
 
+    public int VertexCount = 0;
+    public  Dictionary<string, List<Face>> TextureFaces;
+
     public List<Entity.Entity> Entities;
     
     public RoomMeshReader(string path)
@@ -30,6 +35,7 @@ public class RoomMeshReader : MeshReader
         Logger = factory.CreateLogger<RoomMeshReader>();
         TextureVertices = new List<Vertex[]>{};
         TexturePaths = new List<string>();
+        TextureFaces = new Dictionary<string, List<Face>>();
         _vertexIndices = new List<int[]>();
         Entities = new List<Entity.Entity>();
     }
@@ -80,7 +86,7 @@ public class RoomMeshReader : MeshReader
         var buf = new byte[3];
         InputFileStream.ReadExactly(buf, 0, 3);
         
-        return new Vertex(position, uv, lightmapUv, buf);
+        return new Vertex(position, uv, VertexCount++, lightmapUv, buf);
     }
     
     public void ReadTextureObjectData(string relativePath)
@@ -99,10 +105,19 @@ public class RoomMeshReader : MeshReader
         var triangleCount = ReadInt32();
         Logger.LogInformation("Triangle Count: {}", triangleCount);
         var indices = new int[triangleCount * 3];
-        for (int i = 0; i < triangleCount * 3; i++)
+        var faces = new List<Face>();
+        for (int i = 0; i < triangleCount; i++)
         {
-            indices[i] =  _indicesOffset + ReadInt32();
+            var verts = new Vertex[3];
+            for (int j = 0; j < 3; j++)
+            {
+                var localIndex = ReadInt32();
+                verts[j] = verticies[localIndex];
+                indices[(i * 3) + j] = _indicesOffset + localIndex;
+            }
+            faces.Add(new Face(verts));
         }
+        TextureFaces.TryAdd(relativePath, faces);
         _indicesOffset += vertexCount;
         _vertexIndices.Add(indices);
     }
